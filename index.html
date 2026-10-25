@@ -4,71 +4,148 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Poster Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Limelight&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f7f5f1; --ink: #1d1c1a; --muted: #6b675f; --line: #dcd7ce; --card: #ffffff; --accent: #1d1c1a;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #1b1a18; --ink: #ece8e1; --muted: #a39d92; --line: #3a3732; --card: #24221f; --accent: #ece8e1; }
+    --night: #0d0b0c; --velvet: #5c0f17; --velvet-deep: #2a0609; --gold: #e9c46a; --gold-dim: #8a7038;
+    --bulb: #ffe7a3; --ink: #f3ece0; --muted: #b7ab98; --frame: #1a1416;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; }
-  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
-  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
-  form { display: flex; gap: 8px; margin-bottom: 12px; }
-  input[type=search], input[type=password] {
-    flex: 1; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--card); color: var(--ink);
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--ink); font: 15px/1.5 Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background:
+      radial-gradient(ellipse 60% 45% at 50% 38%, rgba(255, 214, 140, .10), transparent 70%),
+      linear-gradient(90deg, var(--velvet-deep) 0, var(--velvet) 4%, var(--velvet-deep) 8%, var(--velvet) 12%, transparent 16%,
+        transparent 84%, var(--velvet) 88%, var(--velvet-deep) 92%, var(--velvet) 96%, var(--velvet-deep) 100%),
+      var(--night);
+    display: grid; grid-template-rows: auto 1fr auto auto; min-height: 100%;
   }
-  button { font: inherit; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); cursor: pointer; }
-  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
-  .recent { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; min-height: 0; }
-  .recent button { padding: 4px 10px; font-size: 13px; color: var(--muted); }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
-  .poster { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: inherit; }
-  .poster img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 6px; display: block; background: var(--line); }
-  .poster:hover img, .poster:focus-visible img { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .poster span { display: block; font-size: 13px; margin-top: 6px; }
-  .poster small { color: var(--muted); }
-  .status { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
-    padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+  @media (max-width: 640px) { body { background: radial-gradient(ellipse 80% 40% at 50% 35%, rgba(255,214,140,.10), transparent 70%), var(--night); } }
+
+  /* The marquee */
+  header { text-align: center; padding: 28px 16px 8px; }
+  .marquee {
+    display: inline-block; padding: 14px 34px 12px; border-radius: 10px; background: #171213;
+    border: 2px solid var(--gold-dim); position: relative;
+    box-shadow: 0 0 0 6px #171213, 0 0 0 8px var(--gold-dim), 0 0 40px rgba(233, 196, 106, .15);
+  }
+  .marquee::before, .marquee::after { content: ""; position: absolute; left: 10px; right: 10px; height: 6px;
+    background: radial-gradient(circle, var(--bulb) 0 2.2px, transparent 2.6px) 0 50% / 16px 6px repeat-x;
+    filter: drop-shadow(0 0 3px rgba(255, 220, 140, .9)); animation: chase 1.6s steps(2) infinite; }
+  .marquee::before { top: -14px; } .marquee::after { bottom: -14px; animation-delay: .8s; }
+  @keyframes chase { 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .marquee::before, .marquee::after { animation: none; } }
+  .marquee small { display: block; font: 500 11px/1 Inter, sans-serif; letter-spacing: .3em; color: var(--gold); margin-bottom: 6px; }
+  .marquee h1 { margin: 0; font: 400 34px/1.05 Limelight, Georgia, serif; color: var(--bulb); text-shadow: 0 0 12px rgba(255, 210, 120, .45); }
+
+  /* The screen: one poster, framed */
+  .stage { display: grid; place-items: center; padding: 26px 16px 14px; }
+  .frame {
+    position: relative; width: min(300px, 64vw); aspect-ratio: 2 / 3; border-radius: 4px; background: var(--frame);
+    padding: 14px; border: 1px solid #3a2c22;
+    box-shadow: inset 0 0 0 2px var(--gold-dim), 0 0 0 10px #241a14, 0 0 0 12px var(--gold-dim),
+      0 30px 60px rgba(0, 0, 0, .65), 0 0 80px rgba(255, 210, 130, .10);
+  }
+  .frame button { all: unset; display: block; width: 100%; height: 100%; cursor: pointer; border-radius: 2px; }
+  .frame button:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .frame img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 2px; }
+  .frame .blank { width: 100%; height: 100%; display: grid; place-items: center; text-align: center; padding: 18px;
+    border: 1px dashed #4a3a2c; border-radius: 2px; color: var(--muted); font-size: 14px; }
+  .frame .blank b { display: block; font: 400 22px/1.2 Limelight, Georgia, serif; color: var(--gold); margin-bottom: 8px; font-weight: 400; }
+  .caption { min-height: 46px; text-align: center; margin-top: 26px; }
+  .caption .title { font: 400 22px/1.2 Limelight, Georgia, serif; color: var(--bulb); }
+  .caption .year { color: var(--muted); font-size: 13px; }
+  .copy { margin-top: 12px; font: 500 14px Inter, sans-serif; color: #1b1210; background: var(--gold); border: 0;
+    border-radius: 999px; padding: 9px 20px; cursor: pointer; }
+  .copy:hover { background: var(--bulb); }
+  .copy[hidden] { display: none; }
+
+  /* The film strip of results */
+  .strip-wrap { padding: 0 16px; }
+  .strip { display: flex; gap: 10px; overflow-x: auto; padding: 10px 6px 12px; scroll-snap-type: x proximity;
+    max-width: 980px; margin: 0 auto; scrollbar-width: thin; }
+  .strip:empty { display: none; }
+  .strip .note { color: var(--muted); font-size: 13px; padding: 8px 4px; white-space: nowrap; }
+  .thumb { all: unset; flex: 0 0 auto; width: 72px; scroll-snap-align: start; cursor: pointer; border-radius: 3px; }
+  .thumb img { width: 72px; height: 108px; object-fit: cover; display: block; border-radius: 3px; opacity: .8; transition: opacity .15s, transform .15s; }
+  .thumb:hover img, .thumb:focus-visible img { opacity: 1; transform: translateY(-2px); }
+  .thumb[aria-current="true"] img { opacity: 1; box-shadow: 0 0 0 2px var(--gold); }
+  .thumb:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* The box office: search at the bottom */
+  .booth { padding: 10px 16px 18px; }
+  .booth-inner { max-width: 640px; margin: 0 auto; }
+  form.search { display: flex; gap: 8px; background: #171213; border: 1px solid var(--gold-dim); border-radius: 999px; padding: 6px; }
+  form.search input { flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--ink); background: transparent; border: 0; padding: 8px 14px; outline: none; }
+  form.search input::placeholder { color: #7f7363; }
+  form.search button { font: 500 14px Inter, sans-serif; border: 0; border-radius: 999px; padding: 8px 18px; background: var(--gold); color: #1b1210; cursor: pointer; }
+  .recent { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+  .recent button { font: 12px Inter, sans-serif; color: var(--muted); background: transparent; border: 1px solid #3a2f26; border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+  .recent button:hover { color: var(--ink); border-color: var(--gold-dim); }
+
+  .setup { max-width: 640px; margin: 0 auto 12px; background: #171213; border: 1px solid #3a2f26; border-radius: 12px; padding: 14px; }
+  .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+  .setup form { display: flex; gap: 8px; }
+  .setup input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: #0f0c0d; border: 1px solid #3a2f26; border-radius: 8px; padding: 8px 10px; }
+  .setup button { font: 500 14px Inter, sans-serif; border: 0; border-radius: 8px; padding: 8px 14px; background: var(--gold); color: #1b1210; cursor: pointer; }
+
+  footer { text-align: center; font-size: 11px; color: #7f7363; padding: 0 16px 16px; }
+  footer a, .linkish { color: inherit; }
+  .linkish { border: 0; background: none; padding: 0; text-decoration: underline; font: inherit; cursor: pointer; }
+
+  .status { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: var(--bulb); color: #1b1210;
+    padding: 9px 16px; border-radius: 999px; font: 500 14px Inter, sans-serif; opacity: 0; transition: opacity .2s;
+    pointer-events: none; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
   .status.show { opacity: 1; }
-  .empty { color: var(--muted); font-size: 14px; grid-column: 1 / -1; margin: 0; }
-  .setup { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--card); margin-bottom: 24px; }
-  .setup p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
-  footer { margin-top: 40px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  footer img { height: 12px; }
-  a { color: inherit; }
-  .linkish { border: 0; background: none; padding: 0; color: var(--muted); text-decoration: underline; font-size: 12px; cursor: pointer; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
 <body>
-<main>
-  <h1>Poster Finder</h1>
-  <p class="sub">Search a movie and click its poster to copy it. Then in Subtextual's Library, point at your document's card, click the small picture button on it and choose Paste image. Or drag the poster straight onto the card.</p>
+<header>
+  <div class="marquee"><small>NOW SHOWING</small><h1>Poster Finder</h1></div>
+</header>
 
+<main class="stage">
+  <div class="frame">
+    <button id="screen" type="button" aria-label="Copy this poster" disabled>
+      <div class="blank" id="blank"><div><b>Tonight's feature</b>Search a movie below, pick a poster, then click it to copy.</div></div>
+    </button>
+  </div>
+  <div class="caption" aria-live="polite">
+    <div class="title" id="title"></div>
+    <div class="year" id="year"></div>
+    <button class="copy" id="copy" type="button" hidden>Copy poster</button>
+  </div>
+</main>
+
+<div class="strip-wrap"><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
+
+<section class="booth">
   <section class="setup" id="setup" hidden>
-    <p>Paste your TMDB API key once (themoviedb.org → Settings → API, the "API Read Access Token" or the shorter "API Key"). It stays in this browser.</p>
+    <p>Paste a TMDB API key once (themoviedb.org → Settings → API). It stays in this browser.</p>
     <form id="keyForm">
       <input type="password" id="key" placeholder="TMDB API key or read access token" autocomplete="off" required>
-      <button class="primary">Save key</button>
+      <button>Save key</button>
     </form>
   </section>
+  <div class="booth-inner">
+    <form class="search" id="searchForm" role="search">
+      <label for="q" class="visually-hidden">Search movies</label>
+      <input type="search" id="q" placeholder="Search a movie…" autocomplete="off" autofocus>
+      <button>Search</button>
+    </form>
+    <div class="recent" id="recent"></div>
+  </div>
+</section>
 
-  <form id="searchForm" role="search">
-    <input type="search" id="q" placeholder="Search movies…" autocomplete="off" autofocus>
-    <button class="primary">Search</button>
-  </form>
-  <div class="recent" id="recent"></div>
-  <div class="grid" id="grid"></div>
+<footer>
+  Copy a poster, then in Subtextual's Library click your document's card and paste (⌘V), or use the card's picture button → Paste image.<br>
+  <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a> · This product uses the TMDB API but is not endorsed or certified by TMDB. · <button class="linkish" id="forget" type="button">Change key</button>
+</footer>
 
-  <footer>
-    <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a>
-    <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
-    <button class="linkish" id="forget" type="button">Change key</button>
-  </footer>
-</main>
 <div class="status" id="status" role="status" aria-live="polite"></div>
 
 <script>
@@ -80,9 +157,8 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
     del(k) { try { localStorage.removeItem(k); } catch {} },
   };
-  // A setup link (…/#key=…) saves the key in this browser once, then takes it out of the address bar.
-  // The part after # never reaches the web server.
-  // (Also when the page is already open and only the #key part changes: then the browser doesn't reload.)
+  // A setup link (…/#key=…) saves the key in this browser, then takes it out of the address bar. The part after
+  // # never reaches the web server. Also when the page is already open and only the #key part changes.
   const takeLinkKey = () => {
     const fromLink = new URLSearchParams(location.hash.slice(1)).get("key");
     if (!fromLink) return false;
@@ -92,13 +168,14 @@
   };
   takeLinkKey();
   let key = store.get(KEY, "");
-  window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); showSetup(); say("Key saved in this browser."); } });
-  let timer;
+  let current = null, timer;
+
   const say = (text) => {
     const s = $("status"); s.textContent = text; s.classList.add("show");
-    clearTimeout(timer); timer = setTimeout(() => s.classList.remove("show"), 2600);
+    clearTimeout(timer); timer = setTimeout(() => s.classList.remove("show"), 2800);
   };
   const showSetup = () => { $("setup").hidden = !!key; };
+  window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); showSetup(); say("Key saved in this browser."); } });
 
   // A long token (v4 "read access token") goes in the Authorization header; a short v3 key goes in the URL.
   async function tmdb(path, params) {
@@ -111,7 +188,6 @@
     if (!res.ok) throw new Error("TMDB didn't answer (" + res.status + "). Try again in a moment.");
     return res.json();
   }
-
   const find = async (q) => ((await tmdb("/search/movie", { query: q, include_adult: "false" })).results || []).filter((m) => m.poster_path);
 
   // How many letters differ between two titles (edit distance), for ranking near-misses.
@@ -137,18 +213,30 @@
     }
   }
 
+  function feature(m) {
+    current = m;
+    const screen = $("screen");
+    screen.disabled = false;
+    screen.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = "https://image.tmdb.org/t/p/w500" + m.poster_path; img.alt = m.title + " poster";
+    screen.append(img);
+    $("title").textContent = m.title;
+    $("year").textContent = (m.release_date || "").slice(0, 4);
+    $("copy").hidden = false;
+    for (const t of $("strip").querySelectorAll(".thumb")) t.setAttribute("aria-current", String(t.dataset.id === String(m.id)));
+  }
+
   async function search(q) {
     q = q.trim(); if (!q) return;
-    if (!key) { showSetup(); return say("Paste your TMDB key first."); }
-    const grid = $("grid"); grid.innerHTML = '<p class="empty">Searching…</p>';
+    if (!key) { showSetup(); return say("Paste a TMDB key first."); }
+    const strip = $("strip"); strip.innerHTML = '<span class="note">Searching…</span>';
     try {
       let found = await find(q);
       let close = false;
-      // A misspelling: TMDB matches words exactly, so search each longer word on its own and keep the titles
-      // that look most like what was typed.
+      // A misspelling: TMDB matches the starts of words, so a typo near the end is caught by trimming letters off;
+      // one near the start, by dropping the first letter or two. The closest titles come first.
       if (!found.length) {
-        // TMDB also matches the start of a word, so a typo near the end is caught by trimming letters off;
-        // one near the start, by dropping the first letter or two.
         const pieces = new Set();
         for (const w of q.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)) {
           pieces.add(w);
@@ -170,27 +258,26 @@
       }
       store.set(RECENT, [q, ...store.get(RECENT, []).filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, 8));
       renderRecent();
-      grid.innerHTML = "";
-      if (!found.length) { grid.innerHTML = '<p class="empty">No posters found. Check the spelling, or try one word from the title.</p>'; return; }
-      if (close) { const p = document.createElement("p"); p.className = "empty"; p.style.gridColumn = "1 / -1"; p.textContent = "No exact match. Closest titles:"; grid.append(p); }
+      strip.innerHTML = "";
+      if (!found.length) { strip.innerHTML = '<span class="note">No posters found. Check the spelling, or try one word from the title.</span>'; return; }
+      if (close) { const n = document.createElement("span"); n.className = "note"; n.textContent = "Closest titles:"; strip.append(n); }
       for (const m of found) {
-        const b = document.createElement("button"); b.className = "poster"; b.type = "button";
-        const year = (m.release_date || "").slice(0, 4);
-        const img = document.createElement("img");
-        img.src = "https://image.tmdb.org/t/p/w342" + m.poster_path; img.alt = m.title; img.loading = "lazy";
-        const t = document.createElement("span"); t.textContent = m.title;
-        if (year) { const y = document.createElement("small"); y.textContent = " " + year; t.append(y); }
-        b.append(img, t);
-        b.onclick = () => copy(m);
-        grid.append(b);
+        const b = document.createElement("button"); b.className = "thumb"; b.type = "button"; b.role = "option";
+        b.dataset.id = m.id; b.title = m.title + ((m.release_date || "").slice(0, 4) ? " (" + m.release_date.slice(0, 4) + ")" : "");
+        const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w154" + m.poster_path; img.alt = m.title; img.loading = "lazy";
+        b.append(img);
+        b.onclick = () => feature(m);
+        b.ondblclick = () => (feature(m), copy(m));
+        strip.append(b);
       }
-    } catch (e) { grid.innerHTML = ""; say(e.message); }
+      feature(found[0]);
+    } catch (e) { strip.innerHTML = ""; say(e.message); }
   }
 
   // The clipboard takes PNG everywhere, so the poster is redrawn as a PNG (TMDB's images allow this).
   async function copy(m) {
+    if (!m) return;
     if (!navigator.clipboard || !window.ClipboardItem) return say("This browser can't copy images. Try Chrome or Safari.");
-    say("Copying “" + m.title + "”…");
     const png = (async () => {
       const blob = await (await fetch("https://image.tmdb.org/t/p/w780" + m.poster_path, { mode: "cors" })).blob();
       const bmp = await createImageBitmap(blob);
@@ -201,10 +288,12 @@
     try {
       // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
-      say("Copied. In Subtextual's Library: the card's picture button → Paste image.");
+      say("Copied “" + m.title + "”. Now paste it on your card in Subtextual.");
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
   }
 
+  $("screen").onclick = () => copy(current);
+  $("copy").onclick = () => copy(current);
   $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
   $("keyForm").onsubmit = (e) => {
     e.preventDefault(); key = $("key").value.trim(); store.set(KEY, key); $("key").value = "";
