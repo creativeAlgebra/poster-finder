@@ -164,6 +164,20 @@
     .player .screen16 { width: 100%; }
   }
   @media (min-width: 601px) { .caption .actions { display: contents; } }
+  /* Browse mode (phones): swipe up on the film strip, or tap its handle, and the poster shrinks while the strip's
+     posters grow; swipe down (or tap again) to go back. */
+  .handle { display: none; }
+  @media (max-width: 600px) {
+    .frame { transition: height .28s ease; }
+    .thumb img, .thumb { transition: width .28s ease, height .28s ease; }
+    .handle { display: block; margin: 0 auto 2px; width: 44px; height: 18px; border: 0; background: none; padding: 7px 0; cursor: pointer; }
+    .handle::before { content: ""; display: block; height: 4px; border-radius: 4px; background: var(--gold-dim); }
+    body.browse .frame { height: min(210px, calc(100% - 112px)); }
+    body.browse .stage { justify-content: flex-end; }
+    body.browse .thumb, body.browse .thumb img { width: 136px; }
+    body.browse .thumb img { height: 204px; }
+    body.browse .strip { gap: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -194,7 +208,7 @@
   </div>
 </main>
 
-<div class="strip-wrap"><p class="who"><span id="who"></span> <button class="linkish" id="back" type="button" hidden>Back to results</button></p><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
+<div class="strip-wrap"><button class="handle" id="handle" type="button" aria-label="Bigger posters in the strip" aria-pressed="false"></button><p class="who"><span id="who"></span> <button class="linkish" id="back" type="button" hidden>Back to results</button></p><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
 
 <section class="booth">
   <section class="setup" id="setup" hidden>
@@ -474,7 +488,23 @@
   $("screen").onclick = () => copy(current);
   $("copy").onclick = () => copy(current);
   $("trailer").onclick = () => playTrailer(current);
-  $("related").onclick = () => related(current);
+  $("related").onclick = () => { related(current); if (matchMedia("(max-width: 600px)").matches) browse(true); };
+  // Browse mode on phones: a vertical swipe on the strip (up: bigger posters, down: back), or a tap on the handle.
+  const browse = (on) => {
+    document.body.classList.toggle("browse", on);
+    $("handle").setAttribute("aria-pressed", String(on));
+    $("handle").setAttribute("aria-label", on ? "Smaller posters in the strip" : "Bigger posters in the strip");
+  };
+  $("handle").onclick = () => browse(!document.body.classList.contains("browse"));
+  let touch = null;
+  const wrap = document.querySelector(".strip-wrap");
+  wrap.addEventListener("touchstart", (e) => { const t = e.touches[0]; touch = { x: t.clientX, y: t.clientY }; }, { passive: true });
+  wrap.addEventListener("touchend", (e) => {
+    if (!touch) return;
+    const t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+    touch = null;
+    if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx) * 1.5) browse(dy < 0);
+  }, { passive: true });
   $("back").onclick = () => { if (!results) return; $("who").textContent = results.label; $("back").hidden = true; fill(results.found); };
   $("closePlayer").onclick = () => { closeTrailer(); $("trailer").focus(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTrailer(); });
