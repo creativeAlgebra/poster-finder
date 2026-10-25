@@ -281,10 +281,13 @@
   // An actor's (or director's) films and shows, best known first.
   async function filmsOf(person) {
     const c = await tmdb("/person/" + person.id + "/combined_credits", {});
-    const all = [...(c.cast || []), ...(c.crew || []).filter((x) => x.job === "Director")];
+    // Their real roles, not talk-show and award-show appearances as themselves; the best-known (most voted) first.
+    const self = /^(self|himself|herself|themselves|narrator)\b/i;
+    const all = [...(c.cast || []).filter((x) => !self.test(x.character || "") && !(x.genre_ids || []).some((g) => g === 10767 || g === 10763)),
+      ...(c.crew || []).filter((x) => x.job === "Director")];
     const seen = new Map();
-    for (const m of all) if (m.poster_path && !seen.has(m.media_type + m.id)) seen.set(m.media_type + m.id, item(m));
-    return [...seen.values()].sort((a, b) => b.popularity - a.popularity).slice(0, 40);
+    for (const m of all) if (m.poster_path && !seen.has(m.media_type + m.id)) seen.set(m.media_type + m.id, { ...item(m), votes: m.vote_count || 0 });
+    return [...seen.values()].sort((a, b) => b.votes - a.votes).slice(0, 40);
   }
 
   // How many letters differ between two titles (edit distance), for ranking near-misses.
