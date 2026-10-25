@@ -24,7 +24,8 @@
       url("theater.jpg") center 30% / cover no-repeat fixed,
       var(--night);
     /* One screen, no scrolling: the poster frame takes whatever height the marquee, strip and search leave. */
-    display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; height: 100vh; height: 100dvh; overflow: hidden;
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; grid-template-columns: minmax(0, 1fr);
+    height: 100vh; height: 100dvh; overflow: hidden;
   }
 
   /* The marquee */
