@@ -209,7 +209,7 @@
 
 <footer>
   Copy a poster, then in Subtextual's Library click your document's card and paste (⌘V), or use the card's picture button → Paste image.<br>
-  <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a> · This product uses the TMDB API but is not endorsed or certified by TMDB. · <button class="linkish" id="forget" type="button">Change key</button>
+  <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a> · This product uses the TMDB API but is not endorsed or certified by TMDB.
 </footer>
 
 <div class="status" id="status" role="status" aria-live="polite"></div>
@@ -240,19 +240,35 @@
     const s = $("status"); s.textContent = text; s.classList.add("show");
     clearTimeout(timer); timer = setTimeout(() => s.classList.remove("show"), 2800);
   };
-  const showSetup = () => { $("setup").hidden = !!key; };
+  const showSetup = () => { $("setup").hidden = true; };
   window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); showSetup(); say("Key saved in this browser."); } });
 
-  // A long token (v4 "read access token") goes in the Authorization header; a short v3 key goes in the URL.
-  async function tmdb(path, params) {
+  // Lookups go through Poster Finder's private relay (poster-finder-relay on Vercel), which holds the TMDB key, so
+  // this page needs no key and clearing the browser changes nothing. A key saved in this browser is only a fallback.
+  const RELAY = "https://poster-finder-relay.vercel.app/api/tmdb";
+  async function direct(path, params) {
     const url = new URL("https://api.themoviedb.org/3" + path);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const headers = { accept: "application/json" };
+    // A long token (v4 "read access token") goes in the Authorization header; a short v3 key goes in the URL.
     if (key.length > 40) headers.Authorization = "Bearer " + key; else url.searchParams.set("api_key", key);
     const res = await fetch(url, { headers });
-    if (res.status === 401) throw new Error("TMDB didn't accept that key. Choose Change key and paste it again.");
+    if (res.status === 401) throw new Error("TMDB didn't accept the saved key.");
     if (!res.ok) throw new Error("TMDB didn't answer (" + res.status + "). Try again in a moment.");
     return res.json();
+  }
+  async function tmdb(path, params) {
+    const url = new URL(RELAY);
+    url.searchParams.set("path", path.replace(/^\//, ""));
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    try {
+      const res = await fetch(url, { headers: { accept: "application/json" } });
+      if (res.ok) return res.json();
+      if (!key) throw new Error("The movie lookup didn't answer (" + res.status + "). Try again in a moment.");
+    } catch (e) {
+      if (!key) throw new Error("The movie lookup couldn't be reached. Check the connection and try again.");
+    }
+    return direct(path, params);
   }
   // Every result is one shape: a movie or a show, with a poster.
   const item = (m, type) => ({
@@ -320,7 +336,6 @@
   // Search anything: a title, an actor or director, a year ("1994"), or both ("comedy 1994" keeps titles from that year).
   async function search(q) {
     q = q.trim(); if (!q) return;
-    if (!key) { showSetup(); return say("Paste a TMDB key first."); }
     const strip = $("strip"); strip.innerHTML = '<span class="note">Searching…</span>'; $("who").textContent = "";
     try {
       const year = (q.match(/\b(18|19|20)\d{2}\b/) || [])[0];
@@ -458,7 +473,6 @@
     e.preventDefault(); key = $("key").value.trim(); store.set(KEY, key); $("key").value = "";
     showSetup(); say("Key saved in this browser."); $("q").focus();
   };
-  $("forget").onclick = () => { key = ""; store.del(KEY); showSetup(); $("key").focus(); };
   showSetup(); renderRecent();
 })();
 </script>
