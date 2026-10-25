@@ -82,9 +82,17 @@
   };
   // A setup link (…/#key=…) saves the key in this browser once, then takes it out of the address bar.
   // The part after # never reaches the web server.
-  const fromLink = new URLSearchParams(location.hash.slice(1)).get("key");
-  if (fromLink) { store.set(KEY, fromLink.trim()); history.replaceState(null, "", location.pathname + location.search); }
+  // (Also when the page is already open and only the #key part changes: then the browser doesn't reload.)
+  const takeLinkKey = () => {
+    const fromLink = new URLSearchParams(location.hash.slice(1)).get("key");
+    if (!fromLink) return false;
+    store.set(KEY, decodeURIComponent(fromLink).trim());
+    history.replaceState(null, "", location.pathname + location.search);
+    return true;
+  };
+  takeLinkKey();
   let key = store.get(KEY, "");
+  window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); showSetup(); say("Key saved in this browser."); } });
   let timer;
   const say = (text) => {
     const s = $("status"); s.textContent = text; s.classList.add("show");
