@@ -16,14 +16,14 @@
   html, body { height: 100%; }
   body {
     margin: 0; color: var(--ink); font: 15px/1.5 Inter, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    /* The theater (theater.jpg): curtains at the sides, the dark screen wall in the middle, seats at the foot.
+       A shade at the foot keeps the search readable over the seats. */
     background:
-      radial-gradient(ellipse 60% 45% at 50% 38%, rgba(255, 214, 140, .10), transparent 70%),
-      linear-gradient(90deg, var(--velvet-deep) 0, var(--velvet) 4%, var(--velvet-deep) 8%, var(--velvet) 12%, transparent 16%,
-        transparent 84%, var(--velvet) 88%, var(--velvet-deep) 92%, var(--velvet) 96%, var(--velvet-deep) 100%),
+      linear-gradient(180deg, rgba(13, 11, 12, .15) 0%, rgba(13, 11, 12, 0) 45%, rgba(13, 11, 12, .55) 80%, rgba(13, 11, 12, .9) 100%),
+      url("theater.jpg") center 30% / cover no-repeat fixed,
       var(--night);
     display: grid; grid-template-rows: auto 1fr auto auto; min-height: 100%;
   }
-  @media (max-width: 640px) { body { background: radial-gradient(ellipse 80% 40% at 50% 35%, rgba(255,214,140,.10), transparent 70%), var(--night); } }
 
   /* The marquee */
   header { text-align: center; padding: 28px 16px 8px; }
