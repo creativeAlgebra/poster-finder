@@ -46,7 +46,7 @@
 <body>
 <main>
   <h1>Poster Finder</h1>
-  <p class="sub">Search a movie, click its poster to copy it, then in Subtextual's Library click your document's card and press ⌘V.</p>
+  <p class="sub">Search a movie and click its poster to copy it. Then in Subtextual's Library, point at your document's card, click the small picture button on it and choose Paste image. Or drag the poster straight onto the card.</p>
 
   <section class="setup" id="setup" hidden>
     <p>Paste your TMDB API key once (themoviedb.org → Settings → API, the "API Read Access Token" or the shorter "API Key"). It stays in this browser.</p>
@@ -193,7 +193,7 @@
     try {
       // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
-      say("Copied. In Subtextual's Library, click your card and press ⌘V.");
+      say("Copied. In Subtextual's Library: the card's picture button → Paste image.");
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
   }
 
