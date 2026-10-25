@@ -489,7 +489,7 @@
   $("copy").onclick = () => copy(current);
   $("trailer").onclick = () => playTrailer(current);
   $("related").onclick = () => { related(current); if (matchMedia("(max-width: 600px)").matches) browse(true); };
-  // Browse mode on phones: a vertical swipe on the strip (up: bigger posters, down: back), or a tap on the handle.
+  // Browse mode on phones: a vertical swipe anywhere (up: bigger posters in the strip, down: back), or a tap on the handle.
   const browse = (on) => {
     document.body.classList.toggle("browse", on);
     $("handle").setAttribute("aria-pressed", String(on));
@@ -497,9 +497,12 @@
   };
   $("handle").onclick = () => browse(!document.body.classList.contains("browse"));
   let touch = null;
-  const wrap = document.querySelector(".strip-wrap");
-  wrap.addEventListener("touchstart", (e) => { const t = e.touches[0]; touch = { x: t.clientX, y: t.clientY }; }, { passive: true });
-  wrap.addEventListener("touchend", (e) => {
+  // Anywhere on the page, except while a trailer plays.
+  document.addEventListener("touchstart", (e) => {
+    if (!$("player").hidden || e.touches.length > 1) return (touch = null);
+    const t = e.touches[0]; touch = { x: t.clientX, y: t.clientY };
+  }, { passive: true });
+  document.addEventListener("touchend", (e) => {
     if (!touch) return;
     const t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
     touch = null;
