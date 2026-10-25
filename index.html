@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poster Finder</title>
+<style>
+  :root {
+    --bg: #f7f5f1; --ink: #1d1c1a; --muted: #6b675f; --line: #dcd7ce; --card: #ffffff; --accent: #1d1c1a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1a18; --ink: #ece8e1; --muted: #a39d92; --line: #3a3732; --card: #24221f; --accent: #ece8e1; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  form { display: flex; gap: 8px; margin-bottom: 12px; }
+  input[type=search], input[type=password] {
+    flex: 1; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); color: var(--ink);
+  }
+  button { font: inherit; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .recent { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; min-height: 0; }
+  .recent button { padding: 4px 10px; font-size: 13px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+  .poster { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; color: inherit; }
+  .poster img { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 6px; display: block; background: var(--line); }
+  .poster:hover img, .poster:focus-visible img { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .poster span { display: block; font-size: 13px; margin-top: 6px; }
+  .poster small { color: var(--muted); }
+  .status { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+    padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
+  .status.show { opacity: 1; }
+  .empty { color: var(--muted); font-size: 14px; grid-column: 1 / -1; margin: 0; }
+  .setup { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--card); margin-bottom: 24px; }
+  .setup p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  footer { margin-top: 40px; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  footer img { height: 12px; }
+  a { color: inherit; }
+  .linkish { border: 0; background: none; padding: 0; color: var(--muted); text-decoration: underline; font-size: 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Poster Finder</h1>
+  <p class="sub">Search a movie, click its poster to copy it, then in Subtextual's Library click your document's card and press ⌘V.</p>
+
+  <section class="setup" id="setup" hidden>
+    <p>Paste your TMDB API key once (themoviedb.org → Settings → API, the "API Read Access Token" or the shorter "API Key"). It stays in this browser.</p>
+    <form id="keyForm">
+      <input type="password" id="key" placeholder="TMDB API key or read access token" autocomplete="off" required>
+      <button class="primary">Save key</button>
+    </form>
+  </section>
+
+  <form id="searchForm" role="search">
+    <input type="search" id="q" placeholder="Search movies…" autocomplete="off" autofocus>
+    <button class="primary">Search</button>
+  </form>
+  <div class="recent" id="recent"></div>
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <a href="https://www.themoviedb.org/" rel="noopener">TMDB</a>
+    <span>This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
+    <button class="linkish" id="forget" type="button">Change key</button>
+  </footer>
+</main>
+<div class="status" id="status" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const KEY = "poster-finder:key", RECENT = "poster-finder:recent";
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} },
+  };
+  // A setup link (…/#key=…) saves the key in this browser once, then takes it out of the address bar.
+  // The part after # never reaches the web server.
+  const fromLink = new URLSearchParams(location.hash.slice(1)).get("key");
+  if (fromLink) { store.set(KEY, fromLink.trim()); history.replaceState(null, "", location.pathname + location.search); }
+  let key = store.get(KEY, "");
+  let timer;
+  const say = (text) => {
+    const s = $("status"); s.textContent = text; s.classList.add("show");
+    clearTimeout(timer); timer = setTimeout(() => s.classList.remove("show"), 2600);
+  };
+  const showSetup = () => { $("setup").hidden = !!key; };
+
+  // A long token (v4 "read access token") goes in the Authorization header; a short v3 key goes in the URL.
+  async function tmdb(path, params) {
+    const url = new URL("https://api.themoviedb.org/3" + path);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const headers = { accept: "application/json" };
+    if (key.length > 40) headers.Authorization = "Bearer " + key; else url.searchParams.set("api_key", key);
+    const res = await fetch(url, { headers });
+    if (res.status === 401) throw new Error("TMDB didn't accept that key. Choose Change key and paste it again.");
+    if (!res.ok) throw new Error("TMDB didn't answer (" + res.status + "). Try again in a moment.");
+    return res.json();
+  }
+
+  const find = async (q) => ((await tmdb("/search/movie", { query: q, include_adult: "false" })).results || []).filter((m) => m.poster_path);
+
+  // How many letters differ between two titles (edit distance), for ranking near-misses.
+  function distance(a, b) {
+    const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let prev = row[0]; row[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const t = row[j];
+        row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = t;
+      }
+    }
+    return row[b.length];
+  }
+
+  function renderRecent() {
+    const box = $("recent"); box.innerHTML = "";
+    for (const q of store.get(RECENT, [])) {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = q;
+      b.onclick = () => { $("q").value = q; search(q); };
+      box.append(b);
+    }
+  }
+
+  async function search(q) {
+    q = q.trim(); if (!q) return;
+    if (!key) { showSetup(); return say("Paste your TMDB key first."); }
+    const grid = $("grid"); grid.innerHTML = '<p class="empty">Searching…</p>';
+    try {
+      let found = await find(q);
+      let close = false;
+      // A misspelling: TMDB matches words exactly, so search each longer word on its own and keep the titles
+      // that look most like what was typed.
+      if (!found.length) {
+        // TMDB also matches the start of a word, so a typo near the end is caught by trimming letters off;
+        // one near the start, by dropping the first letter or two.
+        const pieces = new Set();
+        for (const w of q.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)) {
+          pieces.add(w);
+          for (let k = w.length - 1; k >= 4; k -= 1) pieces.add(w.slice(0, k));
+          for (let i = 1; i <= 2 && w.length - i >= 4; i++) pieces.add(w.slice(i, i + 5));
+        }
+        const pools = await Promise.all([...pieces].slice(0, 12).map((w) => find(w).catch(() => [])));
+        const seen = new Map();
+        for (const m of [].concat(...pools)) seen.set(m.id, m);
+        found = [...seen.values()]
+          .map((m) => {
+            const t = m.title.toLowerCase(), s = q.toLowerCase();
+            return { m, d: Math.min(distance(s, t), distance(s, t.replace(/^(the|a|an) /, ""))) };
+          })
+          .filter((x) => x.d <= Math.max(3, Math.round(q.length * 0.4)))
+          .sort((a, b) => a.d - b.d || b.m.popularity - a.m.popularity)
+          .slice(0, 20).map((x) => x.m);
+        close = found.length > 0;
+      }
+      store.set(RECENT, [q, ...store.get(RECENT, []).filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, 8));
+      renderRecent();
+      grid.innerHTML = "";
+      if (!found.length) { grid.innerHTML = '<p class="empty">No posters found. Check the spelling, or try one word from the title.</p>'; return; }
+      if (close) { const p = document.createElement("p"); p.className = "empty"; p.style.gridColumn = "1 / -1"; p.textContent = "No exact match. Closest titles:"; grid.append(p); }
+      for (const m of found) {
+        const b = document.createElement("button"); b.className = "poster"; b.type = "button";
+        const year = (m.release_date || "").slice(0, 4);
+        const img = document.createElement("img");
+        img.src = "https://image.tmdb.org/t/p/w342" + m.poster_path; img.alt = m.title; img.loading = "lazy";
+        const t = document.createElement("span"); t.textContent = m.title;
+        if (year) { const y = document.createElement("small"); y.textContent = " " + year; t.append(y); }
+        b.append(img, t);
+        b.onclick = () => copy(m);
+        grid.append(b);
+      }
+    } catch (e) { grid.innerHTML = ""; say(e.message); }
+  }
+
+  // The clipboard takes PNG everywhere, so the poster is redrawn as a PNG (TMDB's images allow this).
+  async function copy(m) {
+    if (!navigator.clipboard || !window.ClipboardItem) return say("This browser can't copy images. Try Chrome or Safari.");
+    say("Copying “" + m.title + "”…");
+    const png = (async () => {
+      const blob = await (await fetch("https://image.tmdb.org/t/p/w780" + m.poster_path, { mode: "cors" })).blob();
+      const bmp = await createImageBitmap(blob);
+      const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+      c.getContext("2d").drawImage(bmp, 0, 0);
+      return await new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error("no image"))), "image/png"));
+    })();
+    try {
+      // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+      say("Copied. In Subtextual's Library, click your card and press ⌘V.");
+    } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
+  }
+
+  $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
+  $("keyForm").onsubmit = (e) => {
+    e.preventDefault(); key = $("key").value.trim(); store.set(KEY, key); $("key").value = "";
+    showSetup(); say("Key saved in this browser."); $("q").focus();
+  };
+  $("forget").onclick = () => { key = ""; store.del(KEY); showSetup(); $("key").focus(); };
+  showSetup(); renderRecent();
+})();
+</script>
+</body>
+</html>
