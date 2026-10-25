@@ -141,6 +141,7 @@
     <div class="year" id="year"></div>
     <button class="copy" id="copy" type="button" hidden>Copy poster</button>
     <button class="trailer-btn" id="trailer" type="button" hidden>▶ Trailer</button>
+    <button class="trailer-btn" id="related" type="button" hidden>More like this</button>
   </div>
   <div class="player" id="player" hidden role="dialog" aria-label="Trailer">
     <div class="player-inner">
@@ -150,7 +151,7 @@
   </div>
 </main>
 
-<div class="strip-wrap"><p class="who" id="who"></p><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
+<div class="strip-wrap"><p class="who"><span id="who"></span> <button class="linkish" id="back" type="button" hidden>Back to results</button></p><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
 
 <section class="booth">
   <section class="setup" id="setup" hidden>
@@ -276,6 +277,7 @@
     $("year").textContent = (m.date || "").slice(0, 4) + (m.type === "tv" ? " · series" : "");
     $("copy").hidden = false;
     $("trailer").hidden = false;
+    $("related").hidden = false;
     for (const t of $("strip").querySelectorAll(".thumb")) t.setAttribute("aria-current", String(t.dataset.id === m.type + m.id));
   }
 
@@ -335,17 +337,41 @@
       strip.innerHTML = "";
       $("who").textContent = label;
       if (!found.length) { strip.innerHTML = '<span class="note">Nothing found. Check the spelling, or try one word, a name or a year.</span>'; return; }
-      for (const m of found) {
-        const b = document.createElement("button"); b.className = "thumb"; b.type = "button"; b.role = "option";
-        b.dataset.id = m.type + m.id; b.title = m.title + ((m.date || "").slice(0, 4) ? " (" + m.date.slice(0, 4) + ")" : "");
-        const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w154" + m.poster_path; img.alt = m.title; img.loading = "lazy";
-        b.append(img);
-        b.onclick = () => feature(m);
-        b.ondblclick = () => (feature(m), copy(m));
-        strip.append(b);
-      }
+      results = { found, label };
+      $("back").hidden = true;
+      fill(found);
       feature(found[0]);
     } catch (e) { strip.innerHTML = ""; say(e.message); }
+  }
+
+  // The film strip: one thumbnail per title; a click puts it in the frame, a double-click also copies it.
+  let results = null;
+  function fill(list) {
+    const strip = $("strip"); strip.innerHTML = "";
+    for (const m of list) {
+      const b = document.createElement("button"); b.className = "thumb"; b.type = "button"; b.role = "option";
+      b.dataset.id = m.type + m.id; b.title = m.title + ((m.date || "").slice(0, 4) ? " (" + m.date.slice(0, 4) + ")" : "");
+      const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w154" + m.poster_path; img.alt = m.title; img.loading = "lazy";
+      b.append(img);
+      b.onclick = () => feature(m);
+      b.ondblclick = () => (feature(m), copy(m));
+      strip.append(b);
+    }
+    if (current) for (const t of strip.querySelectorAll(".thumb")) t.setAttribute("aria-current", String(t.dataset.id === current.type + current.id));
+    strip.scrollLeft = 0;
+  }
+  // More like this: TMDB's recommendations for the title in the frame (its "similar" list when there are none).
+  async function related(m) {
+    if (!m) return;
+    const kind = m.type === "tv" ? "tv" : "movie";
+    try {
+      let list = ((await tmdb("/" + kind + "/" + m.id + "/recommendations", {})).results || []).filter((x) => x.poster_path).map((x) => item(x, kind));
+      if (!list.length) list = ((await tmdb("/" + kind + "/" + m.id + "/similar", {})).results || []).filter((x) => x.poster_path).map((x) => item(x, kind));
+      if (!list.length) return say("No related titles found for “" + m.title + "”.");
+      $("who").textContent = "More like " + m.title;
+      $("back").hidden = !results;
+      fill(list);
+    } catch (e) { say(e.message); }
   }
 
   // The trailer: TMDB lists each title's videos; the official YouTube trailer plays on the stage, over the frame.
@@ -387,6 +413,8 @@
   $("screen").onclick = () => copy(current);
   $("copy").onclick = () => copy(current);
   $("trailer").onclick = () => playTrailer(current);
+  $("related").onclick = () => related(current);
+  $("back").onclick = () => { if (!results) return; $("who").textContent = results.label; $("back").hidden = true; fill(results.found); };
   $("closePlayer").onclick = () => { closeTrailer(); $("trailer").focus(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTrailer(); });
   $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
