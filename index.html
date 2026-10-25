@@ -22,11 +22,13 @@
       linear-gradient(180deg, rgba(13, 11, 12, .15) 0%, rgba(13, 11, 12, 0) 45%, rgba(13, 11, 12, .55) 80%, rgba(13, 11, 12, .9) 100%),
       url("theater.jpg") center 30% / cover no-repeat fixed,
       var(--night);
-    display: grid; grid-template-rows: auto 1fr auto auto; min-height: 100%;
+    /* One screen, no scrolling: the poster frame takes whatever height the marquee, strip and search leave. */
+    display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; height: 100vh; height: 100dvh; overflow: hidden;
   }
 
   /* The marquee */
-  header { text-align: center; padding: 28px 16px 8px; }
+  header { text-align: center; padding: 22px 16px 4px; }
+  @media (max-height: 640px) { header { padding-top: 14px; } .marquee h1 { font-size: 26px; } .booth { padding-bottom: 10px; } footer { display: none; } }
   .marquee {
     display: inline-block; padding: 14px 34px 12px; border-radius: 10px; background: #171213;
     border: 2px solid var(--gold-dim); position: relative;
@@ -42,9 +44,10 @@
   .marquee h1 { margin: 0; font: 400 34px/1.05 Limelight, Georgia, serif; color: var(--bulb); text-shadow: 0 0 12px rgba(255, 210, 120, .45); }
 
   /* The screen: one poster, framed */
-  .stage { display: grid; place-items: center; padding: 26px 16px 14px; }
+  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 22px 16px 6px; min-height: 0; }
   .frame {
-    position: relative; width: min(300px, 64vw); aspect-ratio: 2 / 3; border-radius: 4px; background: var(--frame);
+    position: relative; flex: 0 1 auto; height: min(450px, 100%); min-height: 120px; max-width: 64vw; aspect-ratio: 2 / 3;
+    border-radius: 4px; background: var(--frame);
     padding: 14px; border: 1px solid #3a2c22;
     box-shadow: inset 0 0 0 2px var(--gold-dim), 0 0 0 10px #241a14, 0 0 0 12px var(--gold-dim),
       0 30px 60px rgba(0, 0, 0, .65), 0 0 80px rgba(255, 210, 130, .10);
@@ -55,7 +58,8 @@
   .frame .blank { width: 100%; height: 100%; display: grid; place-items: center; text-align: center; padding: 18px;
     border: 1px dashed #4a3a2c; border-radius: 2px; color: var(--muted); font-size: 14px; }
   .frame .blank b { display: block; font: 400 22px/1.2 Limelight, Georgia, serif; color: var(--gold); margin-bottom: 8px; font-weight: 400; }
-  .caption { min-height: 46px; text-align: center; margin-top: 26px; }
+  .caption { flex: 0 0 auto; text-align: center; margin-top: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; min-height: 36px; }
+  .caption .copy { margin-top: 0; }
   .caption .title { font: 400 22px/1.2 Limelight, Georgia, serif; color: var(--bulb); }
   .caption .year { color: var(--muted); font-size: 13px; }
   .copy { margin-top: 12px; font: 500 14px Inter, sans-serif; color: #1b1210; background: var(--gold); border: 0;
