@@ -724,13 +724,16 @@
   }
 
   // The trailer: TMDB lists each title's videos; the official YouTube trailer plays on the stage, over the frame.
+  async function trailerOf(m) {
+    const v = ((await tmdb("/" + (m.type === "tv" ? "tv" : "movie") + "/" + m.id + "/videos", {})).results || []).filter((x) => x.site === "YouTube");
+    return v.find((x) => x.type === "Trailer" && x.official) || v.find((x) => x.type === "Trailer") || v.find((x) => x.type === "Teaser") || v[0] || null;
+  }
   async function playTrailer(m) {
     if (!m) return;
     try {
-      const v = ((await tmdb("/" + (m.type === "tv" ? "tv" : "movie") + "/" + m.id + "/videos", {})).results || []).filter((x) => x.site === "YouTube");
+      const pick = await trailerOf(m);
       // Another poster was put in the frame while this one's trailer was being looked up.
       if (current !== m) return;
-      const pick = v.find((x) => x.type === "Trailer" && x.official) || v.find((x) => x.type === "Trailer") || v.find((x) => x.type === "Teaser") || v[0];
       if (!pick) return say("No trailer found for “" + m.title + "”.");
       const f = document.createElement("iframe");
       f.src = "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(pick.key) + "?autoplay=1&rel=0&modestbranding=1";
@@ -758,11 +761,23 @@
       const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(bmp, 0, 0, c.width, c.height);
       return await new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error("no image"))), "image/png"));
     })();
+    // Along with the picture, a few lines of text: the title, your rating and the trailer's link. Where you paste
+    // decides which it takes: a picture spot takes the poster, a text box takes the words.
+    const f = lib.films.get(filmKey(m));
+    const text = (async () => {
+      const yr = (m.date || "").slice(0, 4);
+      const lines = [m.title + (yr ? " (" + yr + ")" : "")];
+      if (f && f.rating) lines.push("My rating: " + starText(f.rating) + " (" + f.rating + "/5)");
+      const t = await trailerOf(m).catch(() => null);
+      if (t) lines.push("Trailer: https://www.youtube.com/watch?v=" + encodeURIComponent(t.key));
+      return new Blob([lines.join("\n")], { type: "text/plain" });
+    })();
     say("Copying “" + m.title + "”…");
     try {
-      // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
-      say("Copied “" + m.title + "”. Now paste it on your card in Subtextual.");
+      // Passing the promises keeps Safari's "user gesture" rule happy while the poster downloads.
+      try { await navigator.clipboard.write([new ClipboardItem({ "image/png": png, "text/plain": text })]); }
+      catch (e) { await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]); }
+      say("Copied “" + m.title + "”" + (f && f.rating ? " with your rating" : "") + ". Now paste it on your card in Subtextual.");
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
   }
 
