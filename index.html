@@ -99,12 +99,6 @@
   .recent button { font: 12px Inter, sans-serif; color: var(--muted); background: transparent; border: 1px solid #3a2f26; border-radius: 999px; padding: 3px 10px; cursor: pointer; }
   .recent button:hover { color: var(--ink); border-color: var(--gold-dim); }
 
-  .setup { max-width: 640px; margin: 0 auto 12px; background: #171213; border: 1px solid #3a2f26; border-radius: 12px; padding: 14px; }
-  .setup p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
-  .setup form { display: flex; gap: 8px; }
-  .setup input { flex: 1; min-width: 0; font: inherit; color: var(--ink); background: #0f0c0d; border: 1px solid #3a2f26; border-radius: 8px; padding: 8px 10px; }
-  .setup button { font: 500 14px Inter, sans-serif; border: 0; border-radius: 8px; padding: 8px 14px; background: var(--gold); color: #1b1210; cursor: pointer; }
-
   footer { text-align: center; font-size: 11px; color: #7f7363; padding: 0 16px 16px; }
   footer a, .linkish { color: inherit; }
   .linkish { border: 0; background: none; padding: 0; text-decoration: underline; font: inherit; cursor: pointer; }
@@ -149,8 +143,9 @@
     .caption { margin-top: 12px; gap: 6px; flex-direction: column; min-height: 0; }
     .caption .title { font-size: 18px; text-align: center; }
     .caption .year { font-size: 12px; }
-    .caption .actions { display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap; }
-    .copy, .trailer-btn { padding: 7px 12px; font-size: 13px; white-space: nowrap; }
+    .caption .actions { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .copy, .trailer-btn { padding: 7px 10px; font-size: 13px; white-space: nowrap; }
+    .wide { display: none; }
     .strip-wrap { padding: 0 8px; }
     .who { font-size: 11px; margin: 0; min-height: 0; }
     .strip { gap: 8px; padding: 6px 4px 8px; }
@@ -163,7 +158,7 @@
     .player { padding: 8px; }
     .player .screen16 { width: 100%; }
   }
-  @media (min-width: 601px) { .caption .actions { display: contents; } }
+  @media (min-width: 601px) { .caption .actions { display: contents; } .narrow { display: none; } }
   /* Browse mode (phones): swipe up on the film strip, or tap its handle, and the poster shrinks while the strip's
      posters grow; swipe down (or tap again) to go back. */
   .handle { display: none; }
@@ -195,9 +190,10 @@
     <div class="title" id="title"></div>
     <div class="year" id="year"></div>
     <div class="actions">
-      <button class="copy" id="copy" type="button" hidden>Copy poster</button>
+      <button class="copy" id="copy" type="button" hidden>Copy<span class="wide"> poster</span></button>
       <button class="trailer-btn" id="trailer" type="button" hidden>▶ Trailer</button>
       <button class="trailer-btn" id="related" type="button" hidden>More like this</button>
+      <button class="trailer-btn" id="posters" type="button" hidden><span class="wide">Other posters</span><span class="narrow">Posters</span></button>
     </div>
   </div>
   <div class="player" id="player" hidden role="dialog" aria-label="Trailer">
@@ -211,13 +207,6 @@
 <div class="strip-wrap"><button class="handle" id="handle" type="button" aria-label="Bigger posters in the strip" aria-pressed="false"></button><p class="who"><span id="who"></span> <button class="linkish" id="back" type="button" hidden>Back to results</button></p><div class="strip" id="strip" role="listbox" aria-label="Posters found"></div></div>
 
 <section class="booth">
-  <section class="setup" id="setup" hidden>
-    <p>Paste a TMDB API key once (themoviedb.org → Settings → API). It stays in this browser.</p>
-    <form id="keyForm">
-      <input type="password" id="key" placeholder="TMDB API key or read access token" autocomplete="off" required>
-      <button>Save key</button>
-    </form>
-  </section>
   <div class="booth-inner">
     <form class="search" id="searchForm" role="search">
       <label for="q" class="visually-hidden">Search movies</label>
@@ -256,13 +245,16 @@
   takeLinkKey();
   let key = store.get(KEY, "");
   let current = null, timer;
+  // Only the newest request may change the film strip: each search, related list, poster list or Back takes a new
+  // turn, and a slower, older answer sees that its turn has passed and is dropped. Answers about the poster in the
+  // frame (its trailer, how many posters it has) are dropped the same way once another poster is in the frame.
+  let stripTurn = 0;
 
   const say = (text) => {
     const s = $("status"); s.textContent = text; s.classList.add("show");
     clearTimeout(timer); timer = setTimeout(() => s.classList.remove("show"), 2800);
   };
-  const showSetup = () => { $("setup").hidden = true; };
-  window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); showSetup(); say("Key saved in this browser."); } });
+  window.addEventListener("hashchange", () => { if (takeLinkKey()) { key = store.get(KEY, ""); say("Key saved in this browser."); } });
 
   // Lookups go through Poster Finder's private relay (poster-finder-relay on Vercel), which holds the TMDB key, so
   // this page needs no key and clearing the browser changes nothing. A key saved in this browser is only a fallback.
@@ -278,7 +270,19 @@
     if (!res.ok) throw new Error("TMDB didn't answer (" + res.status + "). Try again in a moment.");
     return res.json();
   }
-  async function tmdb(path, params) {
+  // Answers are kept for the visit, so going back to a title or a search doesn't ask again.
+  const cache = new Map();
+  function tmdb(path, params) {
+    const id = path + "?" + new URLSearchParams(params);
+    if (!cache.has(id)) {
+      const p = lookup(path, params);
+      cache.set(id, p);
+      p.catch(() => cache.delete(id));
+      if (cache.size > 200) cache.delete(cache.keys().next().value);
+    }
+    return cache.get(id);
+  }
+  async function lookup(path, params) {
     const url = new URL(RELAY);
     url.searchParams.set("path", path.replace(/^\//, ""));
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -341,6 +345,7 @@
   }
 
   function feature(m) {
+    const sameTitle = current && current.type === m.type && current.id === m.id;
     current = m;
     closeTrailer();
     const screen = $("screen");
@@ -354,21 +359,42 @@
     $("copy").hidden = false;
     $("trailer").hidden = false;
     $("related").hidden = false;
-    for (const t of $("strip").querySelectorAll(".thumb")) t.setAttribute("aria-current", String(t.dataset.id === m.type + m.id));
+    // Other posters: shown once TMDB says this title has more than one.
+    if (!sameTitle) {
+      $("posters").hidden = true;
+      postersOf(m).then((list) => { if (current && current.type === m.type && current.id === m.id) $("posters").hidden = list.length < 2; }, () => {});
+    }
+    mark();
+  }
+  // The thumbnail of the poster in the frame is lit: by title in a list of titles, by picture in a list of posters.
+  function mark() {
+    for (const t of $("strip").querySelectorAll(".thumb")) {
+      const on = !!current && t.dataset.id === current.type + current.id && (stripMode !== "posters" || t.dataset.poster === current.poster_path);
+      t.setAttribute("aria-current", String(on));
+    }
   }
 
   // Search anything: a title, an actor or director, a year ("1994"), or both ("comedy 1994" keeps titles from that year).
+  // A number that looks like a year may also be part of a title ("1917", "Blade Runner 2049", "2001: A Space
+  // Odyssey"), so the whole text is always searched as a title too, and titles that contain the number come first.
+  const yearRe = /\b(18|19|20)\d{2}\b/;
+  const key2 = (m) => m.type + m.id;
+  const merge = (...lists) => { const seen = new Map(); for (const m of [].concat(...lists)) if (!seen.has(key2(m))) seen.set(key2(m), m); return [...seen.values()]; };
   async function search(q) {
     q = q.trim(); if (!q) return;
-    const strip = $("strip"); strip.innerHTML = '<span class="note">Searching…</span>'; $("who").textContent = "";
+    const turn = ++stripTurn;
+    const strip = $("strip"); strip.innerHTML = '<span class="note">Searching…</span>'; $("who").textContent = ""; $("back").hidden = true;
     try {
-      const year = (q.match(/\b(18|19|20)\d{2}\b/) || [])[0];
-      const words = q.replace(/\b(18|19|20)\d{2}\b/, "").trim();
+      const year = (q.match(yearRe) || [])[0];
+      const words = q.replace(yearRe, "").replace(/^[\s:,.\-–]+|[\s:,.\-–]+$/g, "").trim();
       let found = [], label = "", close = false;
+      // Titles with the number in their name ("Blade Runner 2049"), searched with the whole text.
+      const named = year ? (await find(q)).filter((m) => m.title.includes(year)) : [];
       if (year && !words) {
-        // A year alone: that year's best-known films.
-        found = ((await tmdb("/discover/movie", { primary_release_year: year, sort_by: "popularity.desc", include_adult: "false" })).results || []).filter((m) => m.poster_path).map((m) => item(m, "movie"));
-        label = "Popular films from " + year;
+        // A year alone: a film named that ("1917") first, then that year's best-known films.
+        const popular = ((await tmdb("/discover/movie", { primary_release_year: year, sort_by: "popularity.desc", include_adult: "false" })).results || []).filter((m) => m.poster_path).map((m) => item(m, "movie"));
+        found = merge(named, popular);
+        label = (named.length ? "“" + year + "” and popular" : "Popular") + " films from " + year;
       } else {
         const res = (await tmdb("/search/multi", { query: words, include_adult: "false" })).results || [];
         const person = res.find((r) => r.media_type === "person");
@@ -377,28 +403,32 @@
         // When the best match is a person (an actor or director), show their films first.
         if (person && top && top.media_type === "person") {
           const theirs = await filmsOf(person);
-          const ids = new Set(theirs.map((m) => m.type + m.id));
-          found = [...theirs, ...found.filter((m) => !ids.has(m.type + m.id))];
+          found = merge(theirs, found);
           label = "Films and shows with " + person.name;
         }
         if (year) {
-          found = found.filter((m) => (m.date || "").startsWith(year));
-          label = (label || "Matches") + " from " + year;
+          const fromYear = found.filter((m) => (m.date || "").startsWith(year));
+          found = merge(named, fromYear);
+          if (fromYear.length) label = (label || "Matches") + " from " + year;
+          else label = "";
         }
         // A misspelling: TMDB matches the starts of words, so a typo near the end is caught by trimming letters off;
-        // one near the start, by dropping the first letter or two. The closest titles come first.
-        if (!found.length && !year) {
+        // one near the start, by dropping the first letter or two. The closest titles come first. A few lookups
+        // at a time, at most eight, so a long typo doesn't flood the movie lookup.
+        if (!found.length) {
           const pieces = new Set();
-          for (const w of words.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)) {
+          for (const w of q.toLowerCase().split(/\s+/).filter((w) => w.length >= 3)) {
             pieces.add(w);
             for (let k = w.length - 1; k >= 4; k -= 1) pieces.add(w.slice(0, k));
             for (let i = 1; i <= 2 && w.length - i >= 4; i++) pieces.add(w.slice(i, i + 5));
           }
-          const pools = await Promise.all([...pieces].slice(0, 12).map((w) => find(w).catch(() => [])));
-          const seen = new Map();
-          for (const m of [].concat(...pools)) seen.set(m.type + m.id, m);
-          const s = words.toLowerCase();
-          found = [...seen.values()]
+          const todo = [...pieces].slice(0, 8), pools = [];
+          for (let i = 0; i < todo.length; i += 4) {
+            pools.push(...await Promise.all(todo.slice(i, i + 4).map((w) => find(w).catch(() => []))));
+            if (turn !== stripTurn) return;
+          }
+          const s = q.toLowerCase();
+          found = merge(...pools)
             .map((m) => { const t = m.title.toLowerCase(); return { m, d: Math.min(distance(s, t), distance(s, t.replace(/^(the|a|an) /, ""))) }; })
             .filter((x) => x.d <= Math.max(3, Math.round(s.length * 0.4)))
             .sort((a, b) => a.d - b.d || b.m.popularity - a.m.popularity)
@@ -407,46 +437,76 @@
           if (close) label = "No exact match. Closest titles:";
         }
       }
+      if (turn !== stripTurn) return;
       store.set(RECENT, [q, ...store.get(RECENT, []).filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, 8));
       renderRecent();
       strip.innerHTML = "";
       $("who").textContent = label;
-      if (!found.length) { strip.innerHTML = '<span class="note">Nothing found. Check the spelling, or try one word, a name or a year.</span>'; return; }
+      if (!found.length) { results = null; strip.innerHTML = '<span class="note">Nothing found. Check the spelling, or try one word, a name or a year.</span>'; return; }
       results = { found, label };
-      $("back").hidden = true;
       fill(found);
       feature(found[0]);
-    } catch (e) { strip.innerHTML = ""; say(e.message); }
+    } catch (e) { if (turn === stripTurn) { strip.innerHTML = ""; say(e.message); } }
   }
 
-  // The film strip: one thumbnail per title; a click puts it in the frame, a double-click also copies it.
-  let results = null;
-  function fill(list) {
+  // The film strip: one thumbnail per title (or per poster); a click puts it in the frame, a double-click also copies it.
+  let results = null, stripMode = "titles";
+  const langName = (code) => { try { return new Intl.DisplayNames([navigator.language || "en"], { type: "language" }).of(code); } catch { return code; } };
+  function fill(list, mode = "titles") {
+    stripMode = mode;
     const strip = $("strip"); strip.innerHTML = "";
     for (const m of list) {
       const b = document.createElement("button"); b.className = "thumb"; b.type = "button"; b.role = "option";
-      b.dataset.id = m.type + m.id; b.title = m.title + ((m.date || "").slice(0, 4) ? " (" + m.date.slice(0, 4) + ")" : "");
-      const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w154" + m.poster_path; img.alt = m.title; img.loading = "lazy";
+      b.dataset.id = m.type + m.id; b.dataset.poster = m.poster_path;
+      const yr = (m.date || "").slice(0, 4);
+      const lang = m.lang === undefined ? "" : " · " + (m.lang ? langName(m.lang) : "no text");
+      b.title = mode === "posters" ? m.title + lang : m.title + (yr ? " (" + yr + ")" : "");
+      const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w154" + m.poster_path; img.alt = b.title; img.loading = "lazy";
       b.append(img);
       b.onclick = () => feature(m);
       b.ondblclick = () => (feature(m), copy(m));
       strip.append(b);
     }
-    if (current) for (const t of strip.querySelectorAll(".thumb")) t.setAttribute("aria-current", String(t.dataset.id === current.type + current.id));
+    mark();
     strip.scrollLeft = 0;
   }
   // More like this: TMDB's recommendations for the title in the frame (its "similar" list when there are none).
   async function related(m) {
     if (!m) return;
+    const turn = ++stripTurn;
     const kind = m.type === "tv" ? "tv" : "movie";
     try {
       let list = ((await tmdb("/" + kind + "/" + m.id + "/recommendations", {})).results || []).filter((x) => x.poster_path).map((x) => item(x, kind));
       if (!list.length) list = ((await tmdb("/" + kind + "/" + m.id + "/similar", {})).results || []).filter((x) => x.poster_path).map((x) => item(x, kind));
+      if (turn !== stripTurn) return;
       if (!list.length) return say("No related titles found for “" + m.title + "”.");
       $("who").textContent = "More like " + m.title;
       $("back").hidden = !results;
       fill(list);
-    } catch (e) { say(e.message); }
+    } catch (e) { if (turn === stripTurn) say(e.message); }
+  }
+  // Other posters: every poster TMDB has for the title, in the visitor's language, in English, and with no text,
+  // the best-voted first. The poster the search found comes first.
+  async function postersOf(m) {
+    const kind = m.type === "tv" ? "tv" : "movie";
+    const langs = [...new Set([(navigator.language || "en").slice(0, 2).toLowerCase(), "en", "null"])].join(",");
+    const r = await tmdb("/" + kind + "/" + m.id + "/images", { include_image_language: langs });
+    const list = (r.posters || []).slice().sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0) || (b.vote_average || 0) - (a.vote_average || 0))
+      .map((p) => ({ ...m, poster_path: p.file_path, lang: p.iso_639_1 }));
+    const found = list.find((p) => p.poster_path === m.poster_path) || { ...m, lang: undefined };
+    return [found, ...list.filter((p) => p !== found)].slice(0, 40);
+  }
+  async function showPosters(m) {
+    if (!m) return;
+    const turn = ++stripTurn;
+    try {
+      const list = await postersOf(m);
+      if (turn !== stripTurn) return;
+      if (list.length < 2) return say("TMDB has just the one poster for “" + m.title + "”.");
+      $("who").textContent = list.length + " posters for " + m.title;
+      $("back").hidden = !results;
+      fill(list, "posters");
+    } catch (e) { if (turn === stripTurn) say(e.message); }
   }
 
   // The trailer: TMDB lists each title's videos; the official YouTube trailer plays on the stage, over the frame.
@@ -454,6 +514,8 @@
     if (!m) return;
     try {
       const v = ((await tmdb("/" + (m.type === "tv" ? "tv" : "movie") + "/" + m.id + "/videos", {})).results || []).filter((x) => x.site === "YouTube");
+      // Another poster was put in the frame while this one's trailer was being looked up.
+      if (current !== m) return;
       const pick = v.find((x) => x.type === "Trailer" && x.official) || v.find((x) => x.type === "Trailer") || v.find((x) => x.type === "Teaser") || v[0];
       if (!pick) return say("No trailer found for “" + m.title + "”.");
       const f = document.createElement("iframe");
@@ -463,21 +525,26 @@
       f.allowFullscreen = true;
       $("screen16").innerHTML = ""; $("screen16").append(f);
       $("player").hidden = false; $("closePlayer").focus();
-    } catch (e) { say(e.message); }
+    } catch (e) { if (current === m) say(e.message); }
   }
   function closeTrailer() { if ($("player").hidden) return; $("player").hidden = true; $("screen16").innerHTML = ""; }
 
-  // The clipboard takes PNG everywhere, so the poster is redrawn as a PNG (TMDB's images allow this).
+  // The clipboard takes PNG everywhere, so the poster is redrawn as a PNG (TMDB's images allow this). It starts
+  // from TMDB's original file, scaled so the long side is at most 2000 pixels (sharp, but not a huge paste).
+  const SHARP = 2000;
   async function copy(m) {
     if (!m) return;
     if (!navigator.clipboard || !window.ClipboardItem) return say("This browser can't copy images. Try Chrome or Safari.");
     const png = (async () => {
-      const blob = await (await fetch("https://image.tmdb.org/t/p/w780" + m.poster_path, { mode: "cors" })).blob();
-      const bmp = await createImageBitmap(blob);
-      const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
-      c.getContext("2d").drawImage(bmp, 0, 0);
+      const res = await fetch("https://image.tmdb.org/t/p/original" + m.poster_path, { mode: "cors" });
+      if (!res.ok) throw new Error("poster " + res.status);
+      const bmp = await createImageBitmap(await res.blob());
+      const scale = Math.min(1, SHARP / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+      const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(bmp, 0, 0, c.width, c.height);
       return await new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new Error("no image"))), "image/png"));
     })();
+    say("Copying “" + m.title + "”…");
     try {
       // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
@@ -488,7 +555,9 @@
   $("screen").onclick = () => copy(current);
   $("copy").onclick = () => copy(current);
   $("trailer").onclick = () => playTrailer(current);
-  $("related").onclick = () => { related(current); if (matchMedia("(max-width: 600px)").matches) browse(true); };
+  const phone = () => matchMedia("(max-width: 600px)").matches;
+  $("related").onclick = () => { related(current); if (phone()) browse(true); };
+  $("posters").onclick = () => { showPosters(current); if (phone()) browse(true); };
   // Browse mode on phones: a vertical swipe anywhere (up: bigger posters in the strip, down: back), or a tap on the handle.
   const browse = (on) => {
     document.body.classList.toggle("browse", on);
@@ -508,15 +577,11 @@
     touch = null;
     if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx) * 1.5) browse(dy < 0);
   }, { passive: true });
-  $("back").onclick = () => { if (!results) return; $("who").textContent = results.label; $("back").hidden = true; fill(results.found); };
+  $("back").onclick = () => { if (!results) return; ++stripTurn; $("who").textContent = results.label; $("back").hidden = true; fill(results.found); };
   $("closePlayer").onclick = () => { closeTrailer(); $("trailer").focus(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTrailer(); });
   $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
-  $("keyForm").onsubmit = (e) => {
-    e.preventDefault(); key = $("key").value.trim(); store.set(KEY, key); $("key").value = "";
-    showSetup(); say("Key saved in this browser."); $("q").focus();
-  };
-  showSetup(); renderRecent();
+  renderRecent();
 })();
 </script>
 </body>
