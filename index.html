@@ -103,10 +103,20 @@
   footer a, .linkish { color: inherit; }
   .linkish { border: 0; background: none; padding: 0; text-decoration: underline; font: inherit; cursor: pointer; }
 
-  .status { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: var(--bulb); color: #1b1210;
+  .status { position: fixed; left: 50%; top: calc(18px + env(safe-area-inset-top)); transform: translateX(-50%); background: var(--bulb); color: #1b1210;
     padding: 9px 16px; border-radius: 999px; font: 500 14px Inter, sans-serif; opacity: 0; transition: opacity .2s;
     pointer-events: none; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
   .status.show { opacity: 1; }
+  /* On phones the message rises from the foot of the screen, just above the search box, clear of the notch or
+     Dynamic Island that hides anything at the top. */
+  @media (max-width: 600px) { .status { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); font-size: 13px; padding: 8px 14px; } }
+  /* A copied poster says so on the poster itself, where the tap was. */
+  .stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.8); pointer-events: none; z-index: 2;
+    background: rgba(13, 11, 12, .82); color: var(--bulb); border: 1px solid var(--gold); border-radius: 999px;
+    padding: 10px 20px; font: 400 20px/1 Limelight, Georgia, serif; white-space: nowrap; opacity: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,.6), 0 0 24px rgba(233,196,106,.25); transition: opacity .2s, transform .2s; }
+  .stamp.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  @media (prefers-reduced-motion: reduce) { .stamp { transition: opacity .2s; transform: translate(-50%, -50%); } }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* The trailer plays on the stage, over the poster frame. */
@@ -254,6 +264,92 @@
   .region h3 { margin: 0; }
   .credit { font-size: 11px; color: var(--muted); margin: 18px 0 0; }
   .credit a { color: inherit; }
+  /* Phones, second pass: the poster gets the screen. A slim title bar under the Dynamic Island in place of the
+     marquee box, the poster nearly edge to edge in a thin gold frame, the title on one line, the actions in one even
+     row, and past searches only while typing or before the first search. */
+  @media (max-width: 600px) {
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left;
+      padding: calc(6px + env(safe-area-inset-top)) 16px 0; }
+    .marquee { display: flex; align-items: baseline; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+    .marquee::before, .marquee::after, .marquee small { display: none; }
+    .marquee h1 { font-size: 22px; }
+    .mine-btn { position: static; order: 2; padding: 6px 12px; font-size: 13px; }
+    .stage { padding: 12px 16px 0; }
+    .frame { height: min(640px, calc(100% - 82px)); max-width: 100%; padding: 0; border: 0; border-radius: 6px;
+      box-shadow: 0 0 0 1px var(--gold-dim), 0 0 0 4px rgba(23, 18, 19, .9), 0 0 0 5px rgba(138, 112, 56, .55), 0 18px 40px rgba(0,0,0,.6), 0 0 60px rgba(255,210,130,.08); }
+    .frame img, .frame button { border-radius: 6px; }
+    .frame .blank { border-radius: 6px; }
+    .caption { margin-top: 12px; flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 2px 8px; width: 100%; max-width: 520px; }
+    .caption .title { font-size: 18px; min-width: 0; max-width: calc(100% - 64px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .caption .actions { flex: 1 0 100%; display: flex; gap: 5px; margin-top: 8px; }
+    .caption .actions > button { flex: 1 1 0; min-width: 0; padding: 8px 2px; font-size: 12px; text-align: center; overflow: hidden; text-overflow: ellipsis; }
+    .strip-wrap { padding: 0 10px; }
+    .handle { margin-top: 4px; }
+    .booth { padding: 4px 16px calc(8px + env(safe-area-inset-bottom)); }
+    form.search { padding: 4px; }
+    form.search input { padding: 7px 12px; }
+    body:has(.strip .thumb):not(.typing) .recent { display: none; }
+    .strip-wrap:has(.strip:empty) .handle { display: none; }
+    .status { bottom: calc(76px + env(safe-area-inset-bottom)); }
+    body.typing .status { bottom: calc(110px + env(safe-area-inset-bottom)); }
+  }
+  @media (max-width: 380px) { .caption .actions { gap: 4px; } .caption .actions > button { font-size: 11px; padding: 7px 0; } }
+  @media (max-width: 600px) and (max-height: 640px) { header { padding-top: calc(4px + env(safe-area-inset-top)); } .marquee h1 { font-size: 20px; } }
+  /* Icons appear only in the phone toolbar. */
+  .ic { display: none; }
+  /* Phones, third pass: no gold-outlined pills. The actions are an icon toolbar on a frosted bar, the search is a
+     flat field with a magnifier, and My films and past searches are plain, quiet controls. */
+  @media (max-width: 600px) {
+    .caption .actions { gap: 0; margin-top: 10px; padding: 4px; border-radius: 16px; background: rgba(28, 22, 23, .62);
+      -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+    .caption .actions > button { all: unset; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 7px 0 6px; border-radius: 12px; cursor: pointer; color: var(--ink); font: 500 10.5px/1.1 Inter, sans-serif;
+      letter-spacing: .01em; -webkit-tap-highlight-color: transparent; transition: background .15s, transform .1s; }
+    .caption .actions > button[hidden] { display: none; }
+    .caption .actions > button > span { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .caption .actions > button:active { background: rgba(255, 255, 255, .08); transform: scale(.96); }
+    .caption .actions > button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+    .ic { display: block; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .ic .fill { fill: currentColor; stroke: none; }
+    .caption .actions > .copy { color: var(--gold); }
+    .caption .actions > .copy > span { color: var(--gold); }
+    .caption .actions > .rate-btn.rated, .caption .actions > .rate-btn.rated > span { color: var(--gold); }
+    .rate-btn.rated .star { fill: currentColor; }
+    .frame { height: min(640px, calc(100% - 96px)); }
+    .mine-btn { border: 0; background: rgba(255, 255, 255, .07); border-radius: 10px; padding: 6px 10px; font-weight: 500; }
+    form.search { background: rgba(255, 255, 255, .08); border: 0; border-radius: 12px; padding: 0;
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+    form.search:focus-within { box-shadow: inset 0 0 0 1px var(--gold-dim); }
+    form.search input { padding: 11px 12px 11px 38px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b7ab98' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4.5 4.5'/%3E%3C/svg%3E") 12px 50% / 18px no-repeat; }
+    form.search input::-webkit-search-decoration { -webkit-appearance: none; }
+    form.search button { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    form.search { position: relative; }
+    .recent button { border: 0; background: rgba(255, 255, 255, .07); border-radius: 8px; padding: 5px 10px; color: var(--ink); }
+    .recent .clear { background: none; color: var(--muted); text-decoration: none; }
+  }
+  /* My films beside the search box on phones; the header button serves wider screens. */
+  .mine-dock { display: none; }
+  /* Phones, fourth pass: no title bar at all, so the poster starts just under the Dynamic Island; the film's title in
+     the same plain type as the toolbar; My films a gold star beside the search box, always in reach. */
+  @media (max-width: 600px) {
+    header { display: none; }
+    body { grid-template-rows: minmax(0, 1fr) auto auto auto; }
+    .stage { padding-top: calc(10px + env(safe-area-inset-top)); }
+    .caption .title { font: 600 16px/1.25 Inter, -apple-system, sans-serif; letter-spacing: -.01em; color: var(--ink); }
+    .caption .year { font-size: 13px; }
+    .caption .actions:not(:has(> button:not([hidden]))) { display: none; }
+    .frame .blank { border: 0; background: rgba(255, 255, 255, .03); }
+    .frame .blank b { font: 600 17px/1.3 Inter, -apple-system, sans-serif; color: var(--ink); letter-spacing: -.01em; }
+    .search-row { display: flex; gap: 8px; align-items: stretch; }
+    .search-row form.search { flex: 1; min-width: 0; }
+    .mine-dock { display: grid; place-items: center; flex: 0 0 auto; width: 46px; border: 0; padding: 0; cursor: pointer; border-radius: 12px;
+      background: rgba(233, 196, 106, .16); box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .35); color: var(--gold);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+    .mine-dock svg { width: 22px; height: 22px; fill: currentColor; }
+    .mine-dock:active { transform: scale(.95); }
+    .mine-dock:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -267,17 +363,18 @@
     <button id="screen" type="button" aria-label="Copy this poster" disabled>
       <div class="blank" id="blank"><div><b>Tonight's feature</b>Search a movie below, pick a poster, then click it to copy.</div></div>
     </button>
+    <div class="stamp" id="stamp" aria-hidden="true">✓ Copied</div>
   </div>
   <div class="caption" aria-live="polite">
     <div class="title" id="title"></div>
     <div class="year" id="year"></div>
     <div class="actions">
-      <button class="copy" id="copy" type="button" hidden>Copy<span class="wide"> poster</span></button>
-      <button class="trailer-btn" id="trailer" type="button" hidden>▶ Trailer</button>
-      <button class="trailer-btn" id="related" type="button" hidden><span class="wide">More like this</span><span class="narrow">Similar</span></button>
-      <button class="trailer-btn" id="posters" type="button" hidden><span class="wide">Other posters</span><span class="narrow">Posters</span></button>
-      <button class="trailer-btn" id="watch" type="button" hidden aria-haspopup="dialog"><span class="wide">Where to watch</span><span class="narrow">Watch</span></button>
-      <button class="trailer-btn rate-btn" id="rate" type="button" hidden aria-haspopup="dialog">★ Rate</button>
+      <button class="copy" id="copy" type="button" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2.5"/><path d="M16 8V5.5A2.5 2.5 0 0 0 13.5 3h-7A2.5 2.5 0 0 0 4 5.5v9A2.5 2.5 0 0 0 6.5 17H8"/></svg><span>Copy<span class="wide"> poster</span></span></button>
+      <button class="trailer-btn" id="trailer" type="button" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z" class="fill"/></svg><span><span class="wide">▶ </span>Trailer</span></button>
+      <button class="trailer-btn" id="related" type="button" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg><span><span class="wide">More like this</span><span class="narrow">Similar</span></span></button>
+      <button class="trailer-btn" id="posters" type="button" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="17" rx="2"/><path d="M3 6v13.5A2.5 2.5 0 0 0 5.5 22H15"/><path d="M9 15l2.5-3 2 2 1.5-1.5"/></svg><span><span class="wide">Other posters</span><span class="narrow">Posters</span></span></button>
+      <button class="trailer-btn" id="watch" type="button" hidden aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg><span><span class="wide">Where to watch</span><span class="narrow">Watch</span></span></button>
+      <button class="trailer-btn rate-btn" id="rate" type="button" hidden aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="star" d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z"/></svg><span><span class="wide" id="rateWide">★ Rate</span><span class="narrow" id="rateNarrow">Rate</span></span></button>
     </div>
   </div>
   <div class="player" id="player" hidden role="dialog" aria-label="Trailer">
@@ -292,11 +389,14 @@
 
 <section class="booth">
   <div class="booth-inner">
-    <form class="search" id="searchForm" role="search">
-      <label for="q" class="visually-hidden">Search movies</label>
-      <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" autofocus>
-      <button>Search</button>
-    </form>
+    <div class="search-row">
+      <form class="search" id="searchForm" role="search">
+        <label for="q" class="visually-hidden">Search movies</label>
+        <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" autofocus>
+        <button>Search</button>
+      </form>
+      <button class="mine-dock" id="mineDock" type="button" aria-label="My films" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z"/></svg></button>
+    </div>
     <div class="recent" id="recent"></div>
   </div>
 </section>
@@ -798,8 +898,15 @@
     try {
       // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+      stamp();
       say("Copied “" + m.title + "”. Now paste it on your card in Subtextual.");
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
+  }
+
+  let stampTimer;
+  function stamp() {
+    const t = $("stamp"); t.classList.add("show");
+    clearTimeout(stampTimer); stampTimer = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
   // ---- Where to watch ----
@@ -893,7 +1000,8 @@
     if (!current) return;
     const f = lib.films.get(filmKey(current));
     const b = $("rate");
-    b.textContent = f && f.rating ? starText(f.rating) : f ? "★ Saved" : "★ Rate";
+    $("rateWide").textContent = f && f.rating ? starText(f.rating) : f ? "★ Saved" : "★ Rate";
+    $("rateNarrow").textContent = f && f.rating ? half(f.rating) + (f.rating % 1 ? "" : ".0") : f ? "Saved" : "Rate";
     b.classList.toggle("rated", !!f);
     b.setAttribute("aria-label", f && f.rating ? "Your rating, " + f.rating + " stars. Change it" : f ? "In your films. Change it" : "Rate it or add it to a list");
   }
@@ -1062,7 +1170,8 @@
       row(lb, l.name, l.items.length, () => showMine(l.items.map((k) => lib.films.get(k)), l.name), [ren, del]);
     }
   }
-  $("mine").onclick = () => { renderMine(); $("mineDlg").showModal(); };
+  $("mine").onclick = () => { renderMine(); $("mineDlg").showModal(); }
+  $("mineDock").onclick = $("mine").onclick;
   $("mineClose").onclick = () => $("mineDlg").close();
   $("profileName").addEventListener("change", () => {
     ensureProfile(); lib.profile.name = $("profileName").value.trim(); vault.profile(); $("mineTitle").textContent = ownerTitle();
@@ -1160,6 +1269,11 @@
   $("closePlayer").onclick = () => { closeTrailer(); $("trailer").focus(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTrailer(); });
   $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
+  // Phones show past searches only while typing (or before the first search); a short delay on the way out lets a
+  // tap on one land before the row hides.
+  let typingTimer;
+  $("q").addEventListener("focus", () => { clearTimeout(typingTimer); document.body.classList.add("typing"); });
+  $("q").addEventListener("blur", () => { typingTimer = setTimeout(() => document.body.classList.remove("typing"), 300); });
   renderRecent();
 })();
 </script>
