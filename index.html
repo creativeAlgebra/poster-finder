@@ -103,10 +103,20 @@
   footer a, .linkish { color: inherit; }
   .linkish { border: 0; background: none; padding: 0; text-decoration: underline; font: inherit; cursor: pointer; }
 
-  .status { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); background: var(--bulb); color: #1b1210;
+  .status { position: fixed; left: 50%; top: calc(18px + env(safe-area-inset-top)); transform: translateX(-50%); background: var(--bulb); color: #1b1210;
     padding: 9px 16px; border-radius: 999px; font: 500 14px Inter, sans-serif; opacity: 0; transition: opacity .2s;
     pointer-events: none; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
   .status.show { opacity: 1; }
+  /* On phones the message rises from the foot of the screen, just above the search box, clear of the notch or
+     Dynamic Island that hides anything at the top. */
+  @media (max-width: 600px) { .status { top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); font-size: 13px; padding: 8px 14px; } }
+  /* A copied poster says so on the poster itself, where the tap was. */
+  .stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.8); pointer-events: none; z-index: 2;
+    background: rgba(13, 11, 12, .82); color: var(--bulb); border: 1px solid var(--gold); border-radius: 999px;
+    padding: 10px 20px; font: 400 20px/1 Limelight, Georgia, serif; white-space: nowrap; opacity: 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,.6), 0 0 24px rgba(233,196,106,.25); transition: opacity .2s, transform .2s; }
+  .stamp.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  @media (prefers-reduced-motion: reduce) { .stamp { transition: opacity .2s; transform: translate(-50%, -50%); } }
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* The trailer plays on the stage, over the poster frame. */
@@ -267,6 +277,7 @@
     <button id="screen" type="button" aria-label="Copy this poster" disabled>
       <div class="blank" id="blank"><div><b>Tonight's feature</b>Search a movie below, pick a poster, then click it to copy.</div></div>
     </button>
+    <div class="stamp" id="stamp" aria-hidden="true">✓ Copied</div>
   </div>
   <div class="caption" aria-live="polite">
     <div class="title" id="title"></div>
@@ -798,8 +809,15 @@
     try {
       // Passing the promise keeps Safari's "user gesture" rule happy while the poster downloads.
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+      stamp();
       say("Copied “" + m.title + "”. Now paste it on your card in Subtextual.");
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
+  }
+
+  let stampTimer;
+  function stamp() {
+    const t = $("stamp"); t.classList.add("show");
+    clearTimeout(stampTimer); stampTimer = setTimeout(() => t.classList.remove("show"), 1600);
   }
 
   // ---- Where to watch ----
