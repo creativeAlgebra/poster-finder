@@ -328,6 +328,28 @@
     .recent button { border: 0; background: rgba(255, 255, 255, .07); border-radius: 8px; padding: 5px 10px; color: var(--ink); }
     .recent .clear { background: none; color: var(--muted); text-decoration: none; }
   }
+  /* My films beside the search box on phones; the header button serves wider screens. */
+  .mine-dock { display: none; }
+  /* Phones, fourth pass: no title bar at all, so the poster starts just under the Dynamic Island; the film's title in
+     the same plain type as the toolbar; My films a gold star beside the search box, always in reach. */
+  @media (max-width: 600px) {
+    header { display: none; }
+    body { grid-template-rows: minmax(0, 1fr) auto auto auto; }
+    .stage { padding-top: calc(10px + env(safe-area-inset-top)); }
+    .caption .title { font: 600 16px/1.25 Inter, -apple-system, sans-serif; letter-spacing: -.01em; color: var(--ink); }
+    .caption .year { font-size: 13px; }
+    .caption .actions:not(:has(> button:not([hidden]))) { display: none; }
+    .frame .blank { border: 0; background: rgba(255, 255, 255, .03); }
+    .frame .blank b { font: 600 17px/1.3 Inter, -apple-system, sans-serif; color: var(--ink); letter-spacing: -.01em; }
+    .search-row { display: flex; gap: 8px; align-items: stretch; }
+    .search-row form.search { flex: 1; min-width: 0; }
+    .mine-dock { display: grid; place-items: center; flex: 0 0 auto; width: 46px; border: 0; padding: 0; cursor: pointer; border-radius: 12px;
+      background: rgba(233, 196, 106, .16); box-shadow: inset 0 0 0 1px rgba(233, 196, 106, .35); color: var(--gold);
+      -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+    .mine-dock svg { width: 22px; height: 22px; fill: currentColor; }
+    .mine-dock:active { transform: scale(.95); }
+    .mine-dock:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  }
 </style>
 </head>
 <body>
@@ -367,11 +389,14 @@
 
 <section class="booth">
   <div class="booth-inner">
-    <form class="search" id="searchForm" role="search">
-      <label for="q" class="visually-hidden">Search movies</label>
-      <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" autofocus>
-      <button>Search</button>
-    </form>
+    <div class="search-row">
+      <form class="search" id="searchForm" role="search">
+        <label for="q" class="visually-hidden">Search movies</label>
+        <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" autofocus>
+        <button>Search</button>
+      </form>
+      <button class="mine-dock" id="mineDock" type="button" aria-label="My films" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z"/></svg></button>
+    </div>
     <div class="recent" id="recent"></div>
   </div>
 </section>
@@ -1145,7 +1170,8 @@
       row(lb, l.name, l.items.length, () => showMine(l.items.map((k) => lib.films.get(k)), l.name), [ren, del]);
     }
   }
-  $("mine").onclick = () => { renderMine(); $("mineDlg").showModal(); };
+  $("mine").onclick = () => { renderMine(); $("mineDlg").showModal(); }
+  $("mineDock").onclick = $("mine").onclick;
   $("mineClose").onclick = () => $("mineDlg").close();
   $("profileName").addEventListener("change", () => {
     ensureProfile(); lib.profile.name = $("profileName").value.trim(); vault.profile(); $("mineTitle").textContent = ownerTitle();
