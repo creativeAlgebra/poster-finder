@@ -454,7 +454,7 @@
     <div class="search-row">
       <form class="search" id="searchForm" role="search">
         <label for="q" class="visually-hidden">Search movies</label>
-        <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" autofocus>
+        <input type="search" id="q" placeholder="A movie, a show, an actor, a year…" autocomplete="off" enterkeyhint="search" autofocus>
         <button>Search</button>
       </form>
       <button class="mine-dock" id="mineDock" type="button" aria-label="My films" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z"/></svg></button>
@@ -1772,7 +1772,12 @@
   $("back").onclick = () => { if (!results) return; ++stripTurn; $("who").textContent = results.label; $("back").hidden = true; fill(results.found); };
   $("closePlayer").onclick = () => { closeTrailer(); $("trailer").focus(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTrailer(); });
-  $("searchForm").onsubmit = (e) => { e.preventDefault(); search($("q").value); };
+  // On touch screens, pressing Search (or Enter) closes the keyboard so the results aren't hidden behind it.
+  $("searchForm").onsubmit = (e) => {
+    e.preventDefault();
+    if (matchMedia("(pointer: coarse)").matches) $("q").blur();
+    search($("q").value);
+  };
   // Phones show past searches only while typing (or before the first search); a short delay on the way out lets a
   // tap on one land before the row hides.
   let typingTimer;
