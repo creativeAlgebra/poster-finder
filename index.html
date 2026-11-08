@@ -350,6 +350,67 @@
     .mine-dock:active { transform: scale(.95); }
     .mine-dock:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   }
+  /* Notes: write about the title in the frame. Markdown in a plain text box, with buttons for the common marks and
+     a preview; on phones the sheet takes the whole screen (above the keyboard) so there is room to write. */
+  .notes-btn.noted { color: var(--bulb); border-color: var(--gold); }
+  @media (max-width: 600px) { .caption .actions > .notes-btn.noted, .caption .actions > .notes-btn.noted > span { color: var(--gold); } }
+  /* Writing mostly happens on a computer, so there the sheet is big: most of the window, with the text and its
+     preview side by side when there's room. */
+  dialog.sheet.notes { width: min(1100px, calc(100% - 48px)); height: min(900px, calc(100dvh - 48px)); max-height: none; overflow: hidden;
+    display: none; flex-direction: column; padding: 22px 26px 18px; }
+  .md-panes { flex: 1 1 auto; min-height: 0; display: flex; gap: 16px; }
+  .md-panes > * { flex: 1 1 0; min-width: 0; }
+  .md-panes.both .md-view { background: transparent; border-color: #2a221d; }
+
+  dialog.sheet.notes[open] { display: flex; }
+  .md-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0 8px; flex-wrap: wrap; }
+  .md-tools { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(255, 255, 255, .05); }
+  .md-tools button { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 34px; height: 32px; border-radius: 8px; cursor: pointer;
+    color: var(--ink); font: 500 16px/1 Georgia, serif; -webkit-tap-highlight-color: transparent; }
+  .md-tools button:hover { background: rgba(255, 255, 255, .08); }
+  .md-tools button:active { background: rgba(255, 255, 255, .14); }
+  .md-tools button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .md-tools svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+  .md-tools svg .fill { fill: currentColor; stroke: none; font: 600 6.5px Inter, sans-serif; }
+  .md-tools[aria-disabled="true"] { opacity: .35; pointer-events: none; }
+  .md-mode { display: flex; padding: 3px; border-radius: 10px; background: rgba(255, 255, 255, .05); }
+  .md-mode button { all: unset; padding: 6px 12px; border-radius: 8px; font: 500 13px/1.2 Inter, sans-serif; color: var(--muted); cursor: pointer; }
+  .md-mode button[aria-selected="true"] { background: rgba(255, 255, 255, .1); color: var(--ink); }
+  .md-mode button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+  .sheet .md-text, .md-view { width: 100%; min-height: 0; height: 100%; font: 17px/1.6 Inter, -apple-system, sans-serif; color: var(--ink);
+    background: var(--night); border: 1px solid #3a2f26; border-radius: 10px; padding: 16px 18px; }
+  .sheet .md-text { resize: none; color-scheme: dark; }
+  .md-view { overflow: auto; }
+  .md-view[hidden] { display: none; }
+  .md-view > :first-child { margin-top: 0; }
+  .md-view h1, .md-view h2, .md-view h3 { font: 600 20px/1.3 Inter, -apple-system, sans-serif; color: var(--bulb); margin: 18px 0 6px; }
+  .md-view h2 { font-size: 17px; } .md-view h3 { font-size: 15px; }
+  .md-view p, .md-view ul, .md-view ol, .md-view blockquote { margin: 0 0 10px; }
+  .md-view ul, .md-view ol { padding-left: 22px; }
+  .md-view blockquote { border-left: 3px solid var(--gold-dim); padding-left: 12px; color: var(--muted); font-style: italic; }
+  .md-view code { font: 14px ui-monospace, Menlo, monospace; background: rgba(255, 255, 255, .07); padding: 1px 4px; border-radius: 4px; }
+  .md-view a { color: var(--gold); }
+  .md-view hr { border: 0; border-top: 1px solid #3a2f26; margin: 14px 0; }
+  .md-view .empty { color: var(--muted); }
+  .notes-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; margin-top: 12px; flex-wrap: wrap; }
+  .notes-foot .note { margin: 0; font-size: 12px; }
+  .notes-acts { display: flex; gap: 8px; margin-left: auto; }
+  .notes-acts .copy { margin-top: 0; }
+  .notes-acts button:disabled { opacity: .5; cursor: default; }
+  @media (max-width: 600px) {
+    #mdBoth { display: none; }
+    .sheet .md-text, .md-view { font-size: 16px; padding: 12px 14px; }
+    dialog.sheet.notes { position: fixed; inset: 0 0 auto 0; margin: 0; width: 100%; max-width: 100%; height: 100dvh; max-height: none;
+      border: 0; border-radius: 0; padding: calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom)); }
+    dialog.sheet.notes.kb { padding-bottom: 10px; }
+    .notes .sheet-head h2 { font: 600 18px/1.25 Inter, -apple-system, sans-serif; color: var(--ink); }
+    .notes .x { font-size: 28px; padding: 0 4px; }
+    .md-bar { margin: 10px 0 8px; flex-wrap: nowrap; }
+    .md-tools { gap: 0; } .md-tools button { width: 32px; height: 34px; }
+    .md-mode button { padding: 7px 9px; }
+    .notes-foot { margin-top: 10px; }
+  }
+  @media (max-width: 380px) { .md-tools button { width: 28px; } .md-mode button { padding: 7px 7px; font-size: 12px; } }
 </style>
 </head>
 <body>
@@ -375,6 +436,7 @@
       <button class="trailer-btn" id="posters" type="button" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="17" rx="2"/><path d="M3 6v13.5A2.5 2.5 0 0 0 5.5 22H15"/><path d="M9 15l2.5-3 2 2 1.5-1.5"/></svg><span><span class="wide">Other posters</span><span class="narrow">Posters</span></span></button>
       <button class="trailer-btn" id="watch" type="button" hidden aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2.5"/><path d="M8 21h8M12 17v4"/></svg><span><span class="wide">Where to watch</span><span class="narrow">Watch</span></span></button>
       <button class="trailer-btn rate-btn" id="rate" type="button" hidden aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="star" d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9L3.4 9.5l6-.8z"/></svg><span><span class="wide" id="rateWide">★ Rate</span><span class="narrow" id="rateNarrow">Rate</span></span></button>
+      <button class="trailer-btn notes-btn" id="notes" type="button" hidden aria-haspopup="dialog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span><span class="wide">✎ </span>Notes</span></button>
     </div>
   </div>
   <div class="player" id="player" hidden role="dialog" aria-label="Trailer">
@@ -453,6 +515,40 @@
   <p class="credit">Streaming listings by <a href="https://www.justwatch.com" target="_blank" rel="noopener">JustWatch</a>, through TMDB. What's available changes often, so check the service before you settle in.</p>
 </dialog>
 
+<dialog class="sheet notes" id="notesDlg" aria-labelledby="notesTitle">
+  <div class="sheet-head">
+    <div><h2 id="notesTitle"></h2><p class="sub" id="notesYear"></p></div>
+    <button class="x" type="button" id="notesClose" aria-label="Close">×</button>
+  </div>
+  <div class="md-bar" role="toolbar" aria-label="Formatting">
+    <div class="md-tools" id="mdTools">
+      <button type="button" data-md="bold" aria-label="Bold" title="Bold (⌘B)"><b>B</b></button>
+      <button type="button" data-md="italic" aria-label="Italic" title="Italic (⌘I)"><i>I</i></button>
+      <button type="button" data-md="strike" aria-label="Strikethrough" title="Strikethrough"><s>S</s></button>
+      <button type="button" data-md="heading" aria-label="Heading" title="Heading">H</button>
+      <button type="button" data-md="bullet" aria-label="Bulleted list" title="Bulleted list"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="7" r="1.4" class="fill"/><circle cx="5" cy="12" r="1.4" class="fill"/><circle cx="5" cy="17" r="1.4" class="fill"/><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/></svg></button>
+      <button type="button" data-md="number" aria-label="Numbered list" title="Numbered list"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 7H20M9.5 12H20M9.5 17H20"/><text x="2.6" y="9.2" class="fill">1</text><text x="2.6" y="14.2" class="fill">2</text><text x="2.6" y="19.2" class="fill">3</text></svg></button>
+      <button type="button" data-md="quote" aria-label="Quote" title="Quote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6v12"/><path d="M9.5 8H19M9.5 12H19M9.5 16H16"/></svg></button>
+    </div>
+    <div class="md-mode" role="tablist" aria-label="View">
+      <button type="button" role="tab" id="mdWrite" aria-selected="true">Write</button>
+      <button type="button" role="tab" id="mdBoth" aria-selected="false">Side by side</button>
+      <button type="button" role="tab" id="mdPreview" aria-selected="false">Preview</button>
+    </div>
+  </div>
+  <div class="md-panes" id="mdPanes">
+  <textarea id="notesText" class="md-text" placeholder="What did you think? **bold**, *italics*, # headings, - lists and > quotes all work." aria-label="Your notes" spellcheck="true"></textarea>
+  <div class="md-view" id="notesView" hidden></div>
+  </div>
+  <div class="notes-foot">
+    <span class="note" id="notesState" aria-live="polite"></span>
+    <div class="notes-acts">
+      <button type="button" class="trailer-btn small" id="notesDelete" hidden>Delete</button>
+      <button type="button" class="copy small" id="notesDownload" title="A Word document with the poster and your notes. Google Docs opens it too.">Download .docx</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog class="sheet" id="mineDlg" aria-labelledby="mineTitle">
   <div class="sheet-head">
     <h2 id="mineTitle">My films</h2>
@@ -466,7 +562,7 @@
   <div class="rows" id="mineLists"></div>
   <div class="inline" style="margin-top:10px"><input type="text" id="mineNewList" placeholder="New list…" maxlength="80" aria-label="New list name"><button type="button" class="trailer-btn small" id="mineAddList">Add</button></div>
   <h3>Backup</h3>
-  <p class="note" id="storeNote">Your films and lists are saved only in this browser on this device. Clearing the browser's site data, or a private window, loses them, so export a backup now and then. Import it here, or in another browser, to bring everything back.</p>
+  <p class="note" id="storeNote">Your films, lists and notes are saved only in this browser on this device. Clearing the browser's site data, or a private window, loses them, so export a backup now and then. Import it here, or in another browser, to bring everything back.</p>
   <div class="actions-row" style="justify-content:flex-start;margin-top:12px">
     <button type="button" class="copy small" id="exportBtn">Export backup</button>
     <button type="button" class="trailer-btn small" id="importBtn">Import backup</button>
@@ -503,19 +599,22 @@
   //   film: { key: "movie603", id, type, title, date, poster_path, rating (0.5–5, or 0), watched ("YYYY-MM-DD"), review, updated }
   //   list: { id, name, items: [film keys], created, updated }
   //   profile: { name, created }
+  //   note: { key: "movie603", id, type, title, date, poster_path, body (Markdown), updated }
   // The same shape is what Export writes, so it can be uploaded to a real account later.
   const FALLBACK = "poster-finder:library";
-  const lib = { profile: null, films: new Map(), lists: new Map() };
+  const lib = { profile: null, films: new Map(), lists: new Map(), notes: new Map() };
   const vault = (() => {
     let dbp = null, mode = "idb";
     const open = () => dbp || (dbp = new Promise((ok, no) => {
       if (!window.indexedDB) return no(new Error("no IndexedDB"));
-      const r = indexedDB.open("poster-finder", 1);
+      // Version 2 adds the notes written about each title.
+      const r = indexedDB.open("poster-finder", 2);
       r.onupgradeneeded = () => {
-        const d = r.result;
-        d.createObjectStore("films", { keyPath: "key" });
-        d.createObjectStore("lists", { keyPath: "id" });
-        d.createObjectStore("meta", { keyPath: "k" });
+        const d = r.result, has = (n) => d.objectStoreNames.contains(n);
+        if (!has("films")) d.createObjectStore("films", { keyPath: "key" });
+        if (!has("lists")) d.createObjectStore("lists", { keyPath: "id" });
+        if (!has("meta")) d.createObjectStore("meta", { keyPath: "k" });
+        if (!has("notes")) d.createObjectStore("notes", { keyPath: "key" });
       };
       r.onsuccess = () => ok(r.result);
       r.onerror = () => no(r.error);
@@ -524,7 +623,7 @@
       const q = d.transaction(name).objectStore(name).getAll();
       q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error);
     });
-    const saveFallback = () => store.set(FALLBACK, { profile: lib.profile, films: [...lib.films.values()], lists: [...lib.lists.values()] });
+    const saveFallback = () => store.set(FALLBACK, { profile: lib.profile, films: [...lib.films.values()], lists: [...lib.lists.values()], notes: [...lib.notes.values()] });
     async function write(name, put, del) {
       if (mode !== "idb") return saveFallback();
       try {
@@ -541,20 +640,23 @@
       async load() {
         try {
           const d = await open();
-          const [films, lists, meta] = await Promise.all([all(d, "films"), all(d, "lists"), all(d, "meta")]);
+          const [films, lists, meta, notes] = await Promise.all([all(d, "films"), all(d, "lists"), all(d, "meta"), all(d, "notes")]);
           films.forEach((f) => lib.films.set(f.key, f));
           lists.forEach((l) => lib.lists.set(l.id, l));
+          notes.forEach((n) => lib.notes.set(n.key, n));
           lib.profile = (meta.find((m) => m.k === "profile") || {}).v || null;
         } catch (e) {
           mode = "local";
           const s = store.get(FALLBACK, {});
           (s.films || []).forEach((f) => lib.films.set(f.key, f));
           (s.lists || []).forEach((l) => lib.lists.set(l.id, l));
+          (s.notes || []).forEach((n) => lib.notes.set(n.key, n));
           lib.profile = s.profile || null;
         }
       },
       films: (put, del) => write("films", put, del),
       lists: (put, del) => write("lists", put, del),
+      notes: (put, del) => write("notes", put, del),
       profile: () => write("meta", [{ k: "profile", v: lib.profile }]),
     };
   })();
@@ -707,7 +809,8 @@
     $("related").hidden = false;
     $("rate").hidden = false;
     $("watch").hidden = false;
-    rateLabel();
+    $("notes").hidden = false;
+    rateLabel(); notesLabel();
     // Other posters: shown once TMDB says this title has more than one.
     if (!sameTitle) {
       $("posters").hidden = true;
@@ -1118,6 +1221,398 @@
   $("logCancel").onclick = $("logClose").onclick = () => $("logDlg").close();
   $("rate").onclick = () => openLog(current);
 
+  // ---- Notes: write about a title, in Markdown, kept in this browser, and download it with the poster as a Word file ----
+  // Markdown is read into blocks of styled runs, which become the preview and the Word document alike.
+  //   block: { t: "h", level, runs } | { t: "p", runs } | { t: "quote", runs } | { t: "ul" | "ol", start, items: [runs] } | { t: "hr" }
+  //   run: { text, b, i, s, code, href }
+  const safeHref = (u) => (/^(https?:|mailto:)/i.test(u) ? u : /^www\./i.test(u) ? "https://" + u : null);
+  function inline(src, f = {}) {
+    const out = []; let buf = "";
+    const flush = () => { if (buf) out.push({ ...f, text: buf }); buf = ""; };
+    const wrap = (inner, extra, len) => { flush(); out.push(...inline(inner, { ...f, ...extra })); return len; };
+    for (let i = 0; i < src.length;) {
+      const c = src[i], rest = src.slice(i), prev = src[i - 1] || " ";
+      let m;
+      if (c === "\\" && /[\\`*_~[\]()#>+\-.!]/.test(src[i + 1] || "")) { buf += src[i + 1]; i += 2; continue; }
+      if (c === "`" && (m = rest.match(/^`([^`\n]+)`/))) { flush(); out.push({ ...f, code: true, text: m[1] }); i += m[0].length; continue; }
+      if (c === "[" && (m = rest.match(/^\[([^\]\n]+)\]\(([^)\s]+)\)/))) { const href = safeHref(m[2]); i += wrap(m[1], href ? { href } : {}, m[0].length); continue; }
+      if (c === "*" || (c === "_" && !/\w/.test(prev))) {
+        const q = c === "*" ? "\\*" : "_", end = c === "_" ? "(?!\\w)" : "";
+        if ((m = rest.match(new RegExp("^" + q + "{3}(?=\\S)([\\s\\S]*?\\S)" + q + "{3}" + end)))) { i += wrap(m[1], { b: true, i: true }, m[0].length); continue; }
+        if ((m = rest.match(new RegExp("^" + q + "{2}(?=\\S)([\\s\\S]*?\\S)" + q + "{2}" + end)))) { i += wrap(m[1], { b: true }, m[0].length); continue; }
+        if ((m = rest.match(new RegExp("^" + q + "(?=[^\\s" + q + "])([\\s\\S]*?[^\\s" + q + "])" + q + "(?!" + q + ")" + end)))) { i += wrap(m[1], { i: true }, m[0].length); continue; }
+      }
+      if (c === "~" && (m = rest.match(/^~~(?=\S)([\s\S]*?\S)~~/))) { i += wrap(m[1], { s: true }, m[0].length); continue; }
+      buf += c; i++;
+    }
+    flush();
+    return out;
+  }
+  function parseMd(md) {
+    const blocks = []; let para = null, quote = null, list = null;
+    const close = () => {
+      if (para) blocks.push({ t: "p", runs: inline(para.join("\n")) });
+      if (quote) blocks.push({ t: "quote", runs: inline(quote.join("\n")) });
+      if (list) blocks.push(list);
+      para = quote = list = null;
+    };
+    for (const line of (md || "").replace(/\r\n?/g, "\n").split("\n")) {
+      let m;
+      if (!line.trim()) { close(); continue; }
+      if ((m = line.match(/^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/))) { close(); blocks.push({ t: "h", level: Math.min(3, m[1].length), runs: inline(m[2]) }); continue; }
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) { close(); blocks.push({ t: "hr" }); continue; }
+      if ((m = line.match(/^\s*>\s?(.*)$/))) { if (!quote) { close(); quote = []; } quote.push(m[1]); continue; }
+      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) { if (!list || list.t !== "ul") { close(); list = { t: "ul", items: [] }; } list.items.push(inline(m[1])); continue; }
+      if ((m = line.match(/^\s*(\d{1,9})[.)]\s+(.*)$/))) { if (!list || list.t !== "ol") { close(); list = { t: "ol", start: +m[1], items: [] }; } list.items.push(inline(m[2])); continue; }
+      // A line that follows a list item or a quote without a blank line carries on that item or quote.
+      if (list) { const last = list.items[list.items.length - 1]; last.push({ text: "\n" }, ...inline(line.trim())); continue; }
+      if (quote) { quote.push(line); continue; }
+      (para || (para = [])).push(line);
+    }
+    close();
+    return blocks;
+  }
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const runsHtml = (runs) => runs.map((r) => {
+    let h = esc(r.text).replace(/\n/g, "<br>");
+    if (r.code) h = "<code>" + h + "</code>";
+    if (r.s) h = "<s>" + h + "</s>";
+    if (r.i) h = "<em>" + h + "</em>";
+    if (r.b) h = "<strong>" + h + "</strong>";
+    if (r.href) h = '<a href="' + esc(r.href) + '" target="_blank" rel="noopener">' + h + "</a>";
+    return h;
+  }).join("");
+  const mdHtml = (blocks) => blocks.map((b) =>
+    b.t === "h" ? "<h" + b.level + ">" + runsHtml(b.runs) + "</h" + b.level + ">"
+    : b.t === "p" ? "<p>" + runsHtml(b.runs) + "</p>"
+    : b.t === "quote" ? "<blockquote>" + runsHtml(b.runs) + "</blockquote>"
+    : b.t === "hr" ? "<hr>"
+    : "<" + b.t + (b.t === "ol" && b.start !== 1 ? ' start="' + b.start + '"' : "") + ">" + b.items.map((it) => "<li>" + runsHtml(it) + "</li>").join("") + "</" + b.t + ">"
+  ).join("");
+
+  // The editor's buttons and ⌘B / ⌘I put Markdown marks around the selection (or take them off again). Typing through
+  // execCommand keeps the browser's undo working; setRangeText is the fallback.
+  const ta = $("notesText");
+  function typeOver(start, end, text, selStart, selEnd) {
+    ta.focus();
+    ta.setSelectionRange(start, end);
+    let ok = false;
+    try { ok = document.execCommand("insertText", false, text); } catch {}
+    if (!ok || ta.value.slice(start, start + text.length) !== text) { ta.setRangeText(text, start, end, "end"); ta.dispatchEvent(new Event("input")); }
+    ta.setSelectionRange(selStart, selEnd);
+  }
+  function wrapSel(mark) {
+    const v = ta.value; let a = ta.selectionStart, z = ta.selectionEnd;
+    // Leave spaces at the edges of the selection outside the marks (a double-tapped word on iPhone takes its space).
+    while (z > a && /\s/.test(v[z - 1])) z--;
+    while (a < z && /\s/.test(v[a])) a++;
+    const n = mark.length, sel = v.slice(a, z);
+    if (v.slice(a - n, a) === mark && v.slice(z, z + n) === mark && !(mark === "*" && v[a - 2] === "*" && v[z + 1] === "*" && v.slice(a - 3, a) !== "***"))
+      return typeOver(a - n, z + n, sel, a - n, z - n);
+    if (sel.length > 2 * n && sel.startsWith(mark) && sel.endsWith(mark)) return typeOver(a, z, sel.slice(n, -n), a, z - 2 * n);
+    typeOver(a, z, mark + sel + mark, a + n, z + n);
+  }
+  function linePrefix(kind) {
+    const v = ta.value, a = v.lastIndexOf("\n", ta.selectionStart - 1) + 1;
+    let z = v.indexOf("\n", Math.max(ta.selectionEnd - (ta.selectionEnd > ta.selectionStart && v[ta.selectionEnd - 1] === "\n" ? 1 : 0), a));
+    if (z < 0) z = v.length;
+    const lines = v.slice(a, z).split("\n");
+    const re = { heading: /^#{1,6}\s+/, bullet: /^\s*[-*+]\s+/, number: /^\s*\d+[.)]\s+/, quote: /^\s*>\s?/ }[kind];
+    const any = /^(#{1,6}\s+|\s*[-*+]\s+|\s*\d+[.)]\s+|\s*>\s?)/;
+    const on = lines.every((l) => !l.trim() || re.test(l));
+    let k = 0;
+    const out = lines.map((l) => {
+      if (!l.trim()) return l;
+      if (on) return l.replace(re, "");
+      const bare = l.replace(any, "");
+      k++;
+      return (kind === "heading" ? "## " : kind === "bullet" ? "- " : kind === "number" ? k + ". " : "> ") + bare;
+    }).join("\n");
+    typeOver(a, z, out, lines.length === 1 ? a + out.length : a, a + out.length);
+  }
+  const mdDo = (k) => (k === "bold" ? wrapSel("**") : k === "italic" ? wrapSel("*") : k === "strike" ? wrapSel("~~") : linePrefix(k));
+  // A tap on a button mustn't take the focus (and the iPhone keyboard) away from the text.
+  $("mdTools").addEventListener("pointerdown", (e) => { if (e.target.closest("button")) e.preventDefault(); });
+  $("mdTools").addEventListener("click", (e) => { const b = e.target.closest("button[data-md]"); if (b) mdDo(b.dataset.md); });
+  ta.addEventListener("keydown", (e) => {
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    const k = { b: "bold", i: "italic" }[e.key.toLowerCase()];
+    if (k) { e.preventDefault(); mdDo(k); }
+  });
+  // Return in a list carries the list on to the next line; Return on an empty item ends the list.
+  ta.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.shiftKey || e.isComposing || ta.selectionStart !== ta.selectionEnd) return;
+    const v = ta.value, p = ta.selectionStart, a = v.lastIndexOf("\n", p - 1) + 1, line = v.slice(a, p);
+    const m = line.match(/^(\s*)([-*+]|(\d+)([.)]))\s+/);
+    if (!m) return;
+    e.preventDefault();
+    if (line.trim() === m[0].trim() && v.slice(p, (v.indexOf("\n", p) + 1 || v.length + 1) - 1).trim() === "") return typeOver(a, p, "", a, a);
+    const next = m[1] + (m[3] ? +m[3] + 1 + m[4] : m[2]) + " ";
+    typeOver(p, p, "\n" + next, p + 1 + next.length, p + 1 + next.length);
+  });
+
+  let noting = null, noteTimer = null;
+  const noteFor = (m) => lib.notes.get(filmKey(m));
+  const words = (s) => (s.match(/[\p{L}\p{N}’']+/gu) || []).length;
+  function notesLabel() {
+    if (!current) return;
+    const has = !!noteFor(current);
+    $("notes").classList.toggle("noted", has);
+    $("notes").setAttribute("aria-label", has ? "Your notes on this. Open them" : "Write notes about this");
+  }
+  function noteState(text) {
+    const n = words(ta.value);
+    $("notesState").textContent = (n ? n + (n === 1 ? " word · " : " words · ") : "") + text;
+  }
+  // Saved as you type, a moment after the last key; the saved copy is kept with the title, its date and the poster
+  // that was in the frame, so My films can show it later. Emptying the text deletes the note.
+  function saveNote() {
+    clearTimeout(noteTimer); noteTimer = null;
+    const m = noting; if (!m) return;
+    const k = filmKey(m), body = ta.value, had = lib.notes.get(k);
+    if (!body.trim()) {
+      if (had) { lib.notes.delete(k); vault.notes([], [k]); }
+      noteState(had ? "Note deleted." : "Saved in this browser as you type.");
+    } else {
+      if (had && had.body === body) return;
+      ensureProfile();
+      const n = { key: k, id: m.id, type: m.type, title: m.title, date: m.date || "", poster_path: m.poster_path || (had && had.poster_path) || null, body, updated: now() };
+      lib.notes.set(k, n); vault.notes([n]);
+      noteState("Saved in this browser.");
+    }
+    $("notesDelete").hidden = !lib.notes.has(k);
+    notesLabel();
+  }
+  ta.addEventListener("input", () => {
+    clearTimeout(noteTimer); noteTimer = setTimeout(saveNote, 500);
+    noteState("Saving…");
+  });
+  // Three views: the text, the text beside its preview (computers; remembered), or the preview alone.
+  const VIEW = "poster-finder:notes-view";
+  let view = "write";
+  const paintPreview = () => {
+    const blocks = parseMd(ta.value);
+    $("notesView").innerHTML = blocks.length ? mdHtml(blocks) : '<p class="empty">Nothing written yet.</p>';
+  };
+  function notesMode(v) {
+    if (v === "both" && phone()) v = "write";
+    view = v;
+    if (v !== "write") paintPreview();
+    $("notesView").hidden = v === "write"; ta.hidden = v === "preview";
+    $("mdPanes").classList.toggle("both", v === "both");
+    for (const [id, w] of [["mdWrite", "write"], ["mdBoth", "both"], ["mdPreview", "preview"]]) $(id).setAttribute("aria-selected", String(v === w));
+    $("mdTools").setAttribute("aria-disabled", String(v === "preview"));
+    if (!phone()) store.set(VIEW, v);
+    if (v !== "preview" && !phone()) ta.focus();
+  }
+  let previewTimer;
+  ta.addEventListener("input", () => { if (view === "both") { clearTimeout(previewTimer); previewTimer = setTimeout(paintPreview, 120); } });
+  $("mdWrite").onclick = () => notesMode("write");
+  $("mdBoth").onclick = () => notesMode("both");
+  $("mdPreview").onclick = () => notesMode("preview");
+  function openNotes(m) {
+    if (!m) return;
+    noting = m;
+    const n = noteFor(m);
+    $("notesTitle").textContent = m.title;
+    $("notesYear").textContent = (m.date || "").slice(0, 4) + (m.type === "tv" ? " · series" : "");
+    ta.value = n ? n.body : "";
+    $("notesDelete").hidden = !n;
+    noteState(n ? "Saved in this browser." : "Saved in this browser as you type.");
+    $("notesDlg").showModal();
+    fitNotes();
+    // On a phone a note already written opens to read; a new one opens ready to type. A computer opens to the view
+    // used last (side by side at first, when the window is wide enough).
+    if (phone()) notesMode(n ? "preview" : "write");
+    else notesMode(store.get(VIEW, innerWidth >= 900 ? "both" : "write"));
+    if (!n || !phone()) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollTop = ta.scrollHeight; }
+  }
+  $("notesDlg").addEventListener("close", () => { if (noteTimer) saveNote(); noting = null; });
+  $("notesClose").onclick = () => $("notesDlg").close();
+  $("notesDelete").onclick = () => {
+    if (!noting || !confirm("Delete your notes on “" + noting.title + "”?")) return;
+    ta.value = ""; saveNote(); notesMode(view === "preview" ? "write" : view);
+  };
+  // On phones the sheet fills the part of the screen the keyboard leaves free, so the text and its buttons stay in view.
+  function fitNotes() {
+    const d = $("notesDlg"), vv = window.visualViewport;
+    if (!d.open || !vv || !phone()) { d.style.height = d.style.top = ""; d.classList.remove("kb"); return; }
+    d.style.height = vv.height + "px"; d.style.top = vv.offsetTop + "px";
+    d.classList.toggle("kb", vv.height < window.innerHeight - 120);
+  }
+  if (window.visualViewport) { visualViewport.addEventListener("resize", fitNotes); visualViewport.addEventListener("scroll", fitNotes); }
+  $("notes").onclick = () => openNotes(current);
+
+  // ---- The download: a Word document (.docx) with the title, the poster and the notes, which Word, Pages and Google
+  // Docs all open. A .docx is a zip of XML files; this writes one by hand (stored, not compressed), so no library loads.
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = (u8) => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  function zip(files) {
+    const enc = new TextEncoder(), parts = [], central = [];
+    const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+      date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    let offset = 0;
+    for (const [name, content] of files) {
+      const data = typeof content === "string" ? enc.encode(content) : content, nm = enc.encode(name), crc = crc32(data);
+      const head = (sig, extra) => {
+        const b = new DataView(new ArrayBuffer(extra ? 46 : 30)); let p = 0;
+        const u32 = (v) => { b.setUint32(p, v, true); p += 4; }, u16 = (v) => { b.setUint16(p, v, true); p += 2; };
+        u32(sig); if (extra) u16(20); u16(20); u16(0x0800); u16(0); u16(time); u16(date); u32(crc); u32(data.length); u32(data.length); u16(nm.length); u16(0);
+        if (extra) { u16(0); u16(0); u16(0); u32(0); u32(offset); }
+        return new Uint8Array(b.buffer);
+      };
+      const local = head(0x04034b50, false);
+      parts.push(local, nm, data);
+      central.push(head(0x02014b50, true), nm);
+      offset += local.length + nm.length + data.length;
+    }
+    const size = central.reduce((s, x) => s + x.length, 0), end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+    end.setUint32(12, size, true); end.setUint32(16, offset, true);
+    return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+  }
+  const xesc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f￾￿]/g, "");
+  function docxBody(blocks, links, nums) {
+    const run = (r) => {
+      // Word wants these in the schema's order: style, font, bold, italic, strike, shading.
+      const pr = (r.href ? '<w:rStyle w:val="Hyperlink"/>' : "") + (r.code ? '<w:rFonts w:ascii="Courier New" w:hAnsi="Courier New" w:cs="Courier New"/>' : "") +
+        (r.b ? "<w:b/>" : "") + (r.i ? "<w:i/>" : "") + (r.s ? "<w:strike/>" : "") + (r.code ? '<w:shd w:val="clear" w:color="auto" w:fill="F1F1F1"/>' : "");
+      const rPr = pr ? "<w:rPr>" + pr + "</w:rPr>" : "";
+      return r.text.split("\n").map((t, i) => "<w:r>" + rPr + (i ? "<w:br/>" : "") + (t ? '<w:t xml:space="preserve">' + xesc(t) + "</w:t>" : "") + "</w:r>").join("");
+    };
+    const runs = (rs) => {
+      let out = "", i = 0;
+      while (i < rs.length) {
+        const r = rs[i];
+        if (!r.href) { out += run(r); i++; continue; }
+        // Neighbouring runs with the same link make one hyperlink.
+        let j = i, inner = "";
+        while (j < rs.length && rs[j].href === r.href) inner += run(rs[j++]);
+        let id = links.get(r.href); if (!id) { id = "rIdL" + (links.size + 1); links.set(r.href, id); }
+        out += '<w:hyperlink r:id="' + id + '" w:history="1">' + inner + "</w:hyperlink>";
+        i = j;
+      }
+      return out;
+    };
+    const para = (style, body, extra = "") => "<w:p><w:pPr>" + (style ? '<w:pStyle w:val="' + style + '"/>' : "") + extra + "</w:pPr>" + body + "</w:p>";
+    return blocks.map((b) => {
+      if (b.t === "h") return para("Heading" + b.level, runs(b.runs));
+      if (b.t === "p") return para("", runs(b.runs));
+      if (b.t === "quote") return para("Quote", runs(b.runs));
+      if (b.t === "hr") return para("", "", '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="BBBBBB"/></w:pBdr>');
+      // Each numbered list counts from its own first number; bullets share one list definition.
+      let id = 1;
+      if (b.t === "ol") { id = nums.length + 2; nums.push(b.start); }
+      return b.items.map((it, k) => para("ListParagraph", runs(it), '<w:numPr><w:ilvl w:val="0"/><w:numId w:val="' + id + '"/></w:numPr>' +
+        (k === b.items.length - 1 ? '<w:spacing w:after="140"/>' : ""))).join("");
+    }).join("");
+  }
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ' + NS + '>' +
+    '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="23"/><w:szCs w:val="23"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>' +
+    '<w:pPrDefault><w:pPr><w:spacing w:after="140" w:line="288" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>' +
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="40"/></w:pPr><w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:sz w:val="48"/><w:szCs w:val="48"/></w:rPr></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="240"/></w:pPr><w:rPr><w:color w:val="666666"/><w:sz w:val="24"/></w:rPr></w:style>' +
+    [[1, 32, 360], [2, 27, 280], [3, 24, 220]].map(([n, sz, before]) => '<w:style w:type="paragraph" w:styleId="Heading' + n + '"><w:name w:val="heading ' + n + '"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="' + before + '" w:after="80"/><w:outlineLvl w:val="' + (n - 1) + '"/></w:pPr><w:rPr><w:b/><w:sz w:val="' + sz + '"/><w:szCs w:val="' + sz + '"/></w:rPr></w:style>').join("") +
+    '<w:style w:type="paragraph" w:styleId="Quote"><w:name w:val="Quote"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:pBdr><w:left w:val="single" w:sz="12" w:space="8" w:color="C9A44C"/></w:pBdr><w:ind w:left="360"/></w:pPr><w:rPr><w:i/><w:color w:val="555555"/></w:rPr></w:style>' +
+    '<w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/><w:ind w:left="720"/></w:pPr></w:style>' +
+    '<w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:rPr><w:color w:val="0563C1"/><w:u w:val="single"/></w:rPr></w:style>' +
+    "</w:styles>";
+  function numbering(starts) {
+    const lvl = (fmt, text, font) => '<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="' + fmt + '"/><w:lvlText w:val="' + text + '"/><w:lvlJc w:val="left"/><w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>' + (font ? '<w:rPr><w:rFonts w:ascii="' + font + '" w:hAnsi="' + font + '" w:hint="default"/></w:rPr>' : "") + "</w:lvl>";
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:numbering ' + NS + ">" +
+      '<w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/>' + lvl("bullet", "•", "Calibri") + "</w:abstractNum>" +
+      '<w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/>' + lvl("decimal", "%1.") + "</w:abstractNum>" +
+      '<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>' +
+      starts.map((s, i) => '<w:num w:numId="' + (i + 2) + '"><w:abstractNumId w:val="1"/><w:lvlOverride w:ilvl="0"><w:startOverride w:val="' + s + '"/></w:lvlOverride></w:num>').join("") +
+      "</w:numbering>";
+  }
+  // The poster as a JPEG with its size, from TMDB (whose images allow this), or null if it can't be fetched.
+  async function posterJpeg(path) {
+    if (!path) return null;
+    try {
+      const res = await fetch("https://image.tmdb.org/t/p/w780" + path, { mode: "cors" });
+      if (!res.ok) return null;
+      const blob = await res.blob(), bmp = await createImageBitmap(blob);
+      let bytes = new Uint8Array(await blob.arrayBuffer());
+      // Word and Google Docs want a real JPEG; anything else is redrawn as one.
+      if (!(bytes[0] === 0xff && bytes[1] === 0xd8)) {
+        const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height; c.getContext("2d").drawImage(bmp, 0, 0);
+        const jpg = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.9));
+        if (!jpg) return null;
+        bytes = new Uint8Array(await jpg.arrayBuffer());
+      }
+      return { bytes, w: bmp.width, h: bmp.height };
+    } catch { return null; }
+  }
+  async function noteDocx(m, body) {
+    const f = lib.films.get(filmKey(m));
+    const pic = await posterJpeg(m.poster_path);
+    const links = new Map(), nums = [];
+    const sub = [(m.date || "").slice(0, 4), m.type === "tv" ? "Series" : "", f && f.rating ? starText(f.rating) + " (" + f.rating + " of 5)" : "",
+      f && f.watched ? "Watched " + new Date(f.watched + "T12:00").toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : ""].filter(Boolean).join("  ·  ");
+    let doc = '<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t xml:space="preserve">' + xesc(m.title) + "</w:t></w:r></w:p>";
+    if (sub) doc += '<w:p><w:pPr><w:pStyle w:val="Subtitle"/></w:pPr><w:r><w:t xml:space="preserve">' + xesc(sub) + "</w:t></w:r></w:p>";
+    if (pic) {
+      // 3.2 inches wide (914400 EMU to the inch), as tall as the poster's shape asks.
+      const cx = Math.round(3.2 * 914400), cy = Math.round((cx * pic.h) / pic.w);
+      doc += '<w:p><w:pPr><w:spacing w:after="240"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="' + cx + '" cy="' + cy + '"/><wp:effectExtent l="0" t="0" r="0" b="0"/>' +
+        '<wp:docPr id="1" name="Poster" descr="' + xesc(m.title + " poster") + '"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr>' +
+        '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+        '<pic:nvPicPr><pic:cNvPr id="1" name="poster.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdPoster"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+        '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + cx + '" cy="' + cy + '"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>';
+    }
+    doc += docxBody(parseMd(body), links, nums);
+    const document_ = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ' + NS + ' xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>' + doc +
+      '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>';
+    const R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/";
+    const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rIdStyles" Type="' + R + 'styles" Target="styles.xml"/><Relationship Id="rIdNumbering" Type="' + R + 'numbering" Target="numbering.xml"/>' +
+      (pic ? '<Relationship Id="rIdPoster" Type="' + R + 'image" Target="media/poster.jpg"/>' : "") +
+      [...links].map(([href, id]) => '<Relationship Id="' + id + '" Type="' + R + 'hyperlink" Target="' + xesc(href) + '" TargetMode="External"/>').join("") + "</Relationships>";
+    const stamp = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+    const core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+      "<dc:title>" + xesc(m.title) + "</dc:title><dc:creator>" + xesc((lib.profile && lib.profile.name) || "Poster Finder") + "</dc:creator>" +
+      '<dcterms:created xsi:type="dcterms:W3CDTF">' + stamp + '</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">' + stamp + "</dcterms:modified></cp:coreProperties>";
+    const types = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpg" ContentType="image/jpeg"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+      '<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>' +
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>';
+    const top = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="' + R + 'officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>';
+    const files = [["[Content_Types].xml", types], ["_rels/.rels", top], ["docProps/core.xml", core], ["word/document.xml", document_],
+      ["word/styles.xml", STYLES], ["word/numbering.xml", numbering(nums)], ["word/_rels/document.xml.rels", rels]];
+    if (pic) files.push(["word/media/poster.jpg", pic.bytes]);
+    return { blob: zip(files), poster: !!pic };
+  }
+  // On an iPhone the file goes to the share sheet (Save to Files, Google Drive, Word, Mail…); elsewhere it downloads.
+  $("notesDownload").onclick = async () => {
+    const m = noting; if (!m) return;
+    if (noteTimer) saveNote();
+    const btn = $("notesDownload"); btn.disabled = true;
+    try {
+      // The poster in the frame, if it's this title (it may be one picked from Other posters).
+      const pick = current && filmKey(current) === filmKey(m) ? current : { ...m, poster_path: m.poster_path || (noteFor(m) || {}).poster_path };
+      const { blob, poster } = await noteDocx(pick, ta.value);
+      const name = (m.title.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Notes") + ((m.date || "").slice(0, 4) ? " (" + m.date.slice(0, 4) + ")" : "") + " notes.docx";
+      const file = new File([blob], name, { type: blob.type });
+      const touch = matchMedia("(pointer: coarse)").matches;
+      if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: m.title }); } catch (e) { if (e.name !== "AbortError") throw e; }
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(file); a.download = name;
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+        say(poster ? "Downloaded “" + name + "”." : "Downloaded, without the poster (it couldn't be fetched).");
+      }
+    } catch (e) { say("Couldn't make the document. Try again."); }
+    btn.disabled = false;
+  };
+
   // Show some of my films in the film strip.
   function showMine(films, label) {
     ++stripTurn;
@@ -1151,6 +1646,8 @@
     row(rows, "Rated, best first", rated.length, () => showMine(rated.slice().sort((a, b) => b.rating - a.rating || a.title.localeCompare(b.title)), "Your ratings, best first"));
     row(rows, "Watched, newest first", watched.length, () => showMine(watched.slice().sort((a, b) => b.watched.localeCompare(a.watched)), "Your diary, newest first"));
     row(rows, "Reviewed", reviewed.length, () => showMine(reviewed.slice().sort((a, b) => (b.updated || "").localeCompare(a.updated || "")), "Your reviews"));
+    const noted = [...lib.notes.values()].sort((a, b) => (b.updated || "").localeCompare(a.updated || ""));
+    row(rows, "With notes, newest first", noted.length, () => showMine(noted, "Your notes, newest first"));
     const lb = $("mineLists"); lb.innerHTML = "";
     const lists = [...lib.lists.values()].sort(byName);
     if (!lists.length) lb.innerHTML = '<p class="note">No lists yet. Make one below, or from any poster’s Rate button.</p>';
@@ -1184,7 +1681,7 @@
   $("mineAddList").onclick = addFromMine;
   $("mineNewList").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFromMine(); } });
   // A sheet closes on a click on the dimmed area around it.
-  for (const d of [$("logDlg"), $("mineDlg"), $("watchDlg")]) d.addEventListener("click", (e) => {
+  for (const d of [$("logDlg"), $("mineDlg"), $("watchDlg"), $("notesDlg")]) d.addEventListener("click", (e) => {
     if (e.target !== d) return;
     const r = d.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
@@ -1192,14 +1689,14 @@
 
   // Backup: one JSON file with the profile, every film and every list.
   $("exportBtn").onclick = () => {
-    const data = { app: "Poster Finder", format: 1, exported: now(), profile: lib.profile, films: [...lib.films.values()], lists: [...lib.lists.values()] };
+    const data = { app: "Poster Finder", format: 1, exported: now(), profile: lib.profile, films: [...lib.films.values()], lists: [...lib.lists.values()], notes: [...lib.notes.values()] };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "poster-finder-backup-" + now().slice(0, 10) + ".json";
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-    say("Backup saved: " + data.films.length + " titles, " + data.lists.length + " lists.");
+    say("Backup saved: " + data.films.length + " titles, " + data.lists.length + " lists, " + data.notes.length + (data.notes.length === 1 ? " note." : " notes."));
   };
   $("importBtn").onclick = () => $("importFile").click();
   const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
@@ -1211,7 +1708,7 @@
     if (!data || data.format !== 1 || !Array.isArray(data.films) || !Array.isArray(data.lists)) return say("That file isn't a Poster Finder backup.");
     // Merge, so nothing here is lost: the newer copy of each title or list wins, and a list with the same name
     // gets the other's titles added.
-    const films = [], lists = [];
+    const films = [], lists = [], notes = [];
     for (const x of data.films) {
       if (!x || !["movie", "tv"].includes(x.type) || !Number.isFinite(x.id)) continue;
       const f = { key: x.type + x.id, id: x.id, type: x.type, title: str(x.title, 300), date: str(x.date, 10),
@@ -1230,13 +1727,20 @@
       else if (sameName) { sameName.items = [...new Set([...sameName.items, ...items])]; sameName.updated = now(); lists.push(sameName); }
       else { lib.lists.set(l.id, l); lists.push(l); }
     }
+    for (const x of Array.isArray(data.notes) ? data.notes : []) {
+      if (!x || !["movie", "tv"].includes(x.type) || !Number.isFinite(x.id) || !str(x.body, 100000).trim()) continue;
+      const n = { key: x.type + x.id, id: x.id, type: x.type, title: str(x.title, 300), date: str(x.date, 10),
+        poster_path: /^\/[\w.-]+$/.test(x.poster_path || "") ? x.poster_path : null, body: str(x.body, 100000), updated: str(x.updated, 40) || now() };
+      const have = lib.notes.get(n.key);
+      if (!have || n.updated > (have.updated || "")) { lib.notes.set(n.key, n); notes.push(n); }
+    }
     ensureProfile();
     if (!lib.profile.name && data.profile && str(data.profile.name, 60)) { lib.profile.name = str(data.profile.name, 60); }
-    await Promise.all([vault.films(films), vault.lists(lists), vault.profile()]);
-    renderMine(); rateLabel(); paintBadges();
-    say("Imported " + films.length + (films.length === 1 ? " title" : " titles") + " and " + lists.length + (lists.length === 1 ? " list." : " lists."));
+    await Promise.all([vault.films(films), vault.lists(lists), vault.notes(notes), vault.profile()]);
+    renderMine(); rateLabel(); notesLabel(); paintBadges();
+    say("Imported " + films.length + (films.length === 1 ? " title, " : " titles, ") + lists.length + (lists.length === 1 ? " list" : " lists") + " and " + notes.length + (notes.length === 1 ? " note." : " notes."));
   };
-  vault.load().then(() => { rateLabel(); paintBadges(); });
+  vault.load().then(() => { rateLabel(); notesLabel(); paintBadges(); });
 
   $("screen").onclick = () => copy(current);
   $("copy").onclick = () => copy(current);
