@@ -238,6 +238,22 @@
   .rows .r .count { color: var(--muted); font-size: 12px; white-space: nowrap; }
   .rows .r .linkish { font-size: 12px; color: var(--muted); }
   .rows .r .linkish:hover { color: var(--ink); }
+
+  /* Where to watch: streaming services for the viewer's country, and showtime searches for films. */
+  .providers { display: flex; flex-direction: column; gap: 12px; }
+  .providers .kind { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+  .logos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .logos a { display: block; width: 46px; height: 46px; border-radius: 10px; overflow: hidden; border: 1px solid #3a2f26; background: var(--night); }
+  .logos a:hover, .logos a:focus-visible { border-color: var(--gold); outline: none; }
+  .logos img { width: 100%; height: 100%; display: block; }
+  .outs { display: flex; flex-wrap: wrap; gap: 8px; }
+  a.trailer-btn { text-decoration: none; display: inline-block; }
+  .sheet select { font: inherit; font-size: 13px; color: var(--ink); background: var(--night); border: 1px solid #3a2f26; border-radius: 8px;
+    padding: 4px 8px; color-scheme: dark; max-width: 100%; }
+  .region { display: flex; align-items: center; gap: 8px 12px; justify-content: space-between; flex-wrap: wrap; margin: 20px 0 10px; }
+  .region h3 { margin: 0; }
+  .credit { font-size: 11px; color: var(--muted); margin: 18px 0 0; }
+  .credit a { color: inherit; }
 </style>
 </head>
 <body>
@@ -260,6 +276,7 @@
       <button class="trailer-btn" id="trailer" type="button" hidden>▶ Trailer</button>
       <button class="trailer-btn" id="related" type="button" hidden><span class="wide">More like this</span><span class="narrow">Similar</span></button>
       <button class="trailer-btn" id="posters" type="button" hidden><span class="wide">Other posters</span><span class="narrow">Posters</span></button>
+      <button class="trailer-btn" id="watch" type="button" hidden aria-haspopup="dialog"><span class="wide">Where to watch</span><span class="narrow">Watch</span></button>
       <button class="trailer-btn rate-btn" id="rate" type="button" hidden aria-haspopup="dialog">★ Rate</button>
     </div>
   </div>
@@ -316,6 +333,24 @@
       <button class="copy" id="logSave">Save</button>
     </div>
   </form>
+</dialog>
+
+<dialog class="sheet" id="watchDlg" aria-labelledby="watchTitle">
+  <div class="sheet-head">
+    <div><h2 id="watchTitle"></h2><p class="sub" id="watchYear"></p></div>
+    <button class="x" type="button" id="watchClose" aria-label="Close">×</button>
+  </div>
+  <section id="showtimes">
+    <h3>In theaters</h3>
+    <p class="note" id="showNote"></p>
+    <div class="outs" id="showOuts"></div>
+  </section>
+  <section id="streaming">
+    <div class="region"><h3>Stream, rent or buy</h3><select id="watchRegion" aria-label="Country" hidden></select></div>
+    <div class="providers" id="providers"></div>
+    <div class="outs" id="streamOuts" style="margin-top:12px"></div>
+  </section>
+  <p class="credit">Streaming listings by <a href="https://www.justwatch.com" target="_blank" rel="noopener">JustWatch</a>, through TMDB. What's available changes often, so check the service before you settle in.</p>
 </dialog>
 
 <dialog class="sheet" id="mineDlg" aria-labelledby="mineTitle">
@@ -571,6 +606,7 @@
     $("trailer").hidden = false;
     $("related").hidden = false;
     $("rate").hidden = false;
+    $("watch").hidden = false;
     rateLabel();
     // Other posters: shown once TMDB says this title has more than one.
     if (!sameTitle) {
@@ -766,6 +802,91 @@
     } catch (e) { say("Couldn't copy that poster. Try again, or right-click it and choose Copy Image."); }
   }
 
+  // ---- Where to watch ----
+  // TMDB lists, per country, the services that stream, rent or sell a title (data from JustWatch). It gives one page
+  // per title and country rather than a link per service, so every logo opens that page, where each service links on.
+  // Showtimes have no open source, so a film gets searches that find the theaters near the viewer.
+  const myRegion = (() => {
+    for (const l of navigator.languages || [navigator.language || ""]) { const m = /-([A-Za-z]{2})\b/.exec(l); if (m) return m[1].toUpperCase(); }
+    return "US";
+  })();
+  let watchRegion = store.get("poster-finder:region", "") || myRegion;
+  const countryName = (() => {
+    try { const d = new Intl.DisplayNames([navigator.language || "en"], { type: "region" }); return (c) => d.of(c) || c; } catch (e) { return (c) => c; }
+  })();
+  const outLink = (label, href) => {
+    const a = document.createElement("a"); a.className = "trailer-btn small"; a.href = href; a.target = "_blank"; a.rel = "noopener"; a.textContent = label;
+    return a;
+  };
+  const KINDS = [["flatrate", "Streaming with a subscription"], ["free", "Free"], ["ads", "Free with ads"], ["rent", "Rent"], ["buy", "Buy"]];
+  function paintProviders(m, all) {
+    const box = $("providers"); box.innerHTML = "";
+    const sel = $("watchRegion");
+    const codes = Object.keys(all || {});
+    if (!codes.includes(watchRegion) && codes.includes(myRegion)) watchRegion = myRegion;
+    sel.innerHTML = "";
+    const opts = [...new Set([watchRegion, ...codes])].map((c) => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1]));
+    for (const [c, n] of opts) { const o = document.createElement("option"); o.value = c; o.textContent = n; o.selected = c === watchRegion; sel.append(o); }
+    sel.hidden = codes.length === 0;
+    const here = (all || {})[watchRegion];
+    const seen = new Set();
+    let any = false;
+    if (here) for (const [k, label] of KINDS) {
+      // A service that both streams and rents shows once, under the cheapest way in.
+      const list = (here[k] || []).filter((p) => p.logo_path && !seen.has(p.provider_id)).sort((a, b) => (a.display_priority || 0) - (b.display_priority || 0));
+      if (!list.length) continue;
+      any = true;
+      const g = document.createElement("div");
+      const h = document.createElement("p"); h.className = "kind"; h.textContent = label; g.append(h);
+      const row = document.createElement("div"); row.className = "logos";
+      for (const p of list) {
+        seen.add(p.provider_id);
+        const a = document.createElement("a"); a.href = here.link; a.target = "_blank"; a.rel = "noopener";
+        a.title = p.provider_name + " (" + label.toLowerCase() + ")"; a.setAttribute("aria-label", a.title);
+        const img = document.createElement("img"); img.src = "https://image.tmdb.org/t/p/w92" + p.logo_path; img.alt = ""; img.loading = "lazy";
+        a.append(img); row.append(a);
+      }
+      g.append(row); box.append(g);
+    }
+    if (!any) {
+      const n = document.createElement("p"); n.className = "note";
+      n.textContent = all ? "No streaming, rental or purchase listed in " + countryName(watchRegion) + " yet." : "Couldn't load the streaming list just now. The searches below still work.";
+      box.append(n);
+    }
+    const outs = $("streamOuts"); outs.innerHTML = "";
+    if (here && here.link) outs.append(outLink("All options on TMDB", here.link));
+    const jw = watchRegion === "GB" ? "uk" : watchRegion.toLowerCase();
+    outs.append(outLink("Search JustWatch", "https://www.justwatch.com/" + jw + "/search?q=" + encodeURIComponent(m.title)));
+  }
+  async function openWatch(m) {
+    if (!m) return;
+    const year = (m.date || "").slice(0, 4);
+    $("watchTitle").textContent = m.title;
+    $("watchYear").textContent = year + (m.type === "tv" ? " · series" : "");
+    // Showtimes: films only. Google lists times at theaters near the viewer; Fandango covers the US.
+    const film = m.type !== "tv";
+    $("showtimes").hidden = !film;
+    const days = m.date ? (Date.now() - Date.parse(m.date)) / 864e5 : 0;
+    // A film still in (or coming to) theaters leads with showtimes; anything older leads with streaming.
+    const fresh = film && days <= 150;
+    if (fresh) $("streaming").before($("showtimes")); else $("showtimes").before($("streaming"));
+    if (film) {
+      $("showNote").textContent = days > 150 ? "Out since " + year + ", so it's likely only at revivals and special screenings now."
+        : days < -1 ? "Opens " + new Date(m.date + "T12:00").toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" }) + "."
+        : "Find times at theaters near you.";
+      const outs = $("showOuts"); outs.innerHTML = "";
+      outs.append(outLink("Showtimes near me", "https://www.google.com/search?q=" + encodeURIComponent(m.title + (year ? " " + year : "") + " showtimes near me")));
+      if (watchRegion === "US" || myRegion === "US") outs.append(outLink("Fandango", "https://www.fandango.com/search?q=" + encodeURIComponent(m.title)));
+    }
+    $("providers").innerHTML = '<p class="note">Looking up where it streams…</p>'; $("streamOuts").innerHTML = ""; $("watchRegion").hidden = true;
+    if (!$("watchDlg").open) $("watchDlg").showModal();
+    let all = null;
+    try { all = (await tmdb("/" + (film ? "movie" : "tv") + "/" + m.id + "/watch/providers", {})).results || {}; } catch (e) {}
+    if (current !== m || !$("watchDlg").open) return;
+    paintProviders(m, all);
+    $("watchRegion").onchange = () => { watchRegion = $("watchRegion").value; store.set("poster-finder:region", watchRegion); paintProviders(m, all); };
+  }
+
   // ---- My films: the rate sheet, the My films sheet, and the backup ----
   const half = (v) => (v >= 1 ? Math.floor(v) : "") + (v % 1 ? "½" : "");
   function rateLabel() {
@@ -954,7 +1075,7 @@
   $("mineAddList").onclick = addFromMine;
   $("mineNewList").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addFromMine(); } });
   // A sheet closes on a click on the dimmed area around it.
-  for (const d of [$("logDlg"), $("mineDlg")]) d.addEventListener("click", (e) => {
+  for (const d of [$("logDlg"), $("mineDlg"), $("watchDlg")]) d.addEventListener("click", (e) => {
     if (e.target !== d) return;
     const r = d.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
@@ -1011,6 +1132,8 @@
   $("screen").onclick = () => copy(current);
   $("copy").onclick = () => copy(current);
   $("trailer").onclick = () => playTrailer(current);
+  $("watch").onclick = () => openWatch(current);
+  $("watchClose").onclick = () => $("watchDlg").close();
   const phone = () => matchMedia("(max-width: 600px)").matches;
   $("related").onclick = () => { related(current); if (phone()) browse(true); };
   $("posters").onclick = () => { showPosters(current); if (phone()) browse(true); };
